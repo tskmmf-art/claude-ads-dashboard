@@ -4,7 +4,6 @@ import * as React from 'react'
 import type { AdMetrics } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatNumber, formatPercent, formatRoas } from '@/lib/utils/formatters'
 
 type SortKey = 'spend' | 'impressions' | 'clicks' | 'conversions' | 'ctr' | 'cpc' | 'roas'
