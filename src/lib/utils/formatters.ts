@@ -1,5 +1,5 @@
-export function formatCurrency(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatCurrency(value: number, currency = 'DKK'): string {
+  return new Intl.NumberFormat('da-DK', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
@@ -8,11 +8,11 @@ export function formatCurrency(value: number, currency = 'USD'): string {
 }
 
 export function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)
+  return new Intl.NumberFormat('da-DK', { maximumFractionDigits: 0 }).format(value)
 }
 
 export function formatPercent(value: number): string {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('da-DK', {
     style: 'percent',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
