@@ -122,9 +122,6 @@ export default function DashboardPage() {
       </div>
 
       <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
-        <div className="flex items-center justify-between">
-           <h2 className="text-xl font-semibold tracking-tight">Bastard</h2>
-        </div>
         <KpiCards totals={totals} isLoading={isLoading} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
