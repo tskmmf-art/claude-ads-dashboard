@@ -50,7 +50,7 @@ export function CampaignTable({ data, isLoading }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Campaigns</CardTitle>
+        <CardTitle>Kampagner</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         {isLoading ? (

@@ -123,13 +123,13 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
         <KpiCards totals={totals} isLoading={isLoading} />
+        <CampaignTable data={campaigns} isLoading={isLoading} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <SpendChart data={dailySpend} isLoading={isLoading} activePlatforms={activePlatforms} />
           <PerformanceChart data={platformBreakdown} isLoading={isLoading} />
         </div>
 
-        <CampaignTable data={campaigns} isLoading={isLoading} />
       </main>
     </div>
   )
