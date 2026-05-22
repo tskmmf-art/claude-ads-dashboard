@@ -45,5 +45,7 @@ export interface KpiTotals {
   conversions: number
   ctr: number
   cpc: number
+  cpm: number
   roas: number
+  avgDailySpend: number
 }
