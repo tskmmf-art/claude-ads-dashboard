@@ -93,12 +93,7 @@ export default function DashboardPage() {
       <header className="border-b bg-white px-6 py-4 shadow-sm">
         <div className="mx-auto max-w-screen-2xl">
           <div className="flex flex-wrap items-center gap-4">
-            <div>
-              <h1 className="text-base font-bold leading-tight">Ads Dashboard</h1>
-              <p className="text-xs text-muted-foreground">
-                Meta · LinkedIn
-              </p>
-            </div>
+            <h1 className="text-base font-bold leading-tight">Overall Performance</h1>
             <div className="flex flex-1 flex-wrap items-center gap-2">
               <PlatformFilter platforms={platformStates} onChange={togglePlatform} />
               {accountSelectors.map(({ platform, hook }) =>
