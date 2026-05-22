@@ -9,7 +9,7 @@ function token() {
 }
 
 export async function fetchMetaAccounts(): Promise<AdAccount[]> {
-  const res = await fetch(`${BASE}/me/adaccounts?fields=id,name,currency&access_token=${token()}`)
+  const res = await fetch(`${BASE}/me/adaccounts?fields=id,name,currency&limit=100&access_token=${token()}`)
   if (!res.ok) throw new Error(`Meta accounts fetch failed: ${res.status}`)
   const json = await res.json()
   return (json.data ?? []).map((a: { id: string; name: string; currency: string }) => ({
@@ -30,14 +30,25 @@ export async function fetchMetaInsights(
     time_range: JSON.stringify({ since, until }),
     time_increment: '1',
     level: 'campaign',
+    limit: '500',           // max rows per page
     access_token: token(),
   })
 
-  const res = await fetch(`${BASE}/${accountId}/insights?${params}`)
-  if (!res.ok) throw new Error(`Meta insights fetch failed: ${res.status}`)
-  const json = await res.json()
+  // ── Cursor-based pagination ─────────────────────────────────────────────
+  const allRows: Record<string, unknown>[] = []
+  let nextUrl: string | null = `${BASE}/${accountId}/insights?${params}`
 
-  return (json.data ?? []).map((row: Record<string, unknown>) => {
+  while (nextUrl) {
+    const currentUrl: string = nextUrl
+    nextUrl = null
+    const r: Response = await fetch(currentUrl)
+    if (!r.ok) throw new Error(`Meta insights fetch failed: ${r.status}`)
+    const j: { data?: Record<string, unknown>[]; paging?: { next?: string } } = await r.json()
+    allRows.push(...(j.data ?? []))
+    nextUrl = j.paging?.next ?? null
+  }
+
+  return allRows.map((row) => {
     const spend = parseFloat(row.spend as string) || 0
     const impressions = parseInt(row.impressions as string) || 0
     const reach = parseInt(row.reach as string) || 0
@@ -50,12 +61,11 @@ export async function fetchMetaInsights(
       ?? '0'
 
     const actionValues = (row.action_values as Array<{ action_type: string; value: string }>) ?? []
-    const revenue =
-      parseFloat(
-        actionValues.find((a) => a.action_type === 'offsite_conversion.fb_pixel_purchase')?.value
-        ?? actionValues.find((a) => a.action_type === 'purchase')?.value
-        ?? '0'
-      )
+    const revenue = parseFloat(
+      actionValues.find((a) => a.action_type === 'offsite_conversion.fb_pixel_purchase')?.value
+      ?? actionValues.find((a) => a.action_type === 'purchase')?.value
+      ?? '0'
+    )
 
     return {
       date: row.date_start as string,

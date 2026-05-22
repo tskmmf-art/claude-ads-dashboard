@@ -2,6 +2,7 @@ import type { AdAccount, AdMetrics } from '@/types'
 
 const BASE = 'https://api.linkedin.com/rest'
 const LI_VERSION = '202503'
+const LI_PAGE_SIZE = 100 // max per page
 
 function headers() {
   const token = process.env.LINKEDIN_ACCESS_TOKEN
@@ -58,16 +59,28 @@ export async function fetchLinkedInInsights(
   const dateRange = `dateRange=(start:(day:${sd},month:${sm},year:${sy}),end:(day:${ed},month:${em},year:${ey}))`
   const accountParam = `accounts=List(${urnParam('sponsoredAccount', accountId)})`
   const fields = 'dateRange,costInLocalCurrency,impressions,clicks,externalWebsiteConversions,pivotValues'
+  const baseUrl = `${BASE}/adAnalytics?q=analytics&pivot=CAMPAIGN&timeGranularity=DAILY&${dateRange}&${accountParam}&fields=${fields}&count=${LI_PAGE_SIZE}`
 
-  const url = `${BASE}/adAnalytics?q=analytics&pivot=CAMPAIGN&timeGranularity=DAILY&${dateRange}&${accountParam}&fields=${fields}`
-  const res = await fetch(url, { headers: headers() })
-  if (!res.ok) throw new Error(`LinkedIn insights fetch failed: ${res.status}`)
-  const json = await res.json()
+  // ── Offset-based pagination ─────────────────────────────────────────────
+  const allElements: LiAnalyticsRow[] = []
+  let start = 0
 
-  // Fetch campaign names for the IDs we got back
+  while (true) {
+    const res = await fetch(`${baseUrl}&start=${start}`, { headers: headers() })
+    if (!res.ok) throw new Error(`LinkedIn insights fetch failed: ${res.status}`)
+    const json = await res.json()
+    const elements: LiAnalyticsRow[] = json.elements ?? []
+    allElements.push(...elements)
+
+    // Stop if we got fewer than a full page — no more data
+    if (elements.length < LI_PAGE_SIZE) break
+    start += LI_PAGE_SIZE
+  }
+
+  // Fetch campaign names for all returned IDs
   const campaignIds = Array.from(
     new Set<string>(
-      (json.elements ?? []).flatMap((e: LiAnalyticsRow) =>
+      allElements.flatMap((e) =>
         (e.pivotValues ?? []).map((v) => v.replace('urn:li:sponsoredCampaign:', ''))
       )
     )
@@ -75,7 +88,6 @@ export async function fetchLinkedInInsights(
 
   const campaignNames: Record<string, string> = {}
   if (campaignIds.length > 0) {
-    // Fetch campaigns using path-based API (new in 202503)
     const cRes = await fetch(
       `${BASE}/adAccounts/${accountId}/adCampaigns?q=search&count=100`,
       { headers: headers() }
@@ -88,7 +100,7 @@ export async function fetchLinkedInInsights(
     }
   }
 
-  return (json.elements ?? []).map((row: LiAnalyticsRow) => {
+  return allElements.map((row) => {
     const d = row.dateRange?.start
     const date = d
       ? `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
