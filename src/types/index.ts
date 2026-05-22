@@ -14,6 +14,7 @@ export interface AdMetrics {
   ctr: number
   cpc: number
   roas: number
+  reach: number
 }
 
 export interface AdAccount {
@@ -47,5 +48,6 @@ export interface KpiTotals {
   cpc: number
   cpm: number
   roas: number
+  reach: number
   avgDailySpend: number
 }

@@ -2,7 +2,7 @@ import type { AdMetrics, KpiTotals } from '@/types'
 
 export function computeKpiTotals(data: AdMetrics[], days = 30): KpiTotals {
   if (data.length === 0) {
-    return { spend: 0, impressions: 0, clicks: 0, conversions: 0, ctr: 0, cpc: 0, cpm: 0, roas: 0, avgDailySpend: 0 }
+    return { spend: 0, impressions: 0, clicks: 0, conversions: 0, ctr: 0, cpc: 0, cpm: 0, roas: 0, reach: 0, avgDailySpend: 0 }
   }
 
   const totals = data.reduce(
@@ -11,8 +11,9 @@ export function computeKpiTotals(data: AdMetrics[], days = 30): KpiTotals {
       impressions: acc.impressions + row.impressions,
       clicks: acc.clicks + row.clicks,
       conversions: acc.conversions + row.conversions,
+      reach: acc.reach + row.reach,
     }),
-    { spend: 0, impressions: 0, clicks: 0, conversions: 0 }
+    { spend: 0, impressions: 0, clicks: 0, conversions: 0, reach: 0 }
   )
 
   return {
@@ -52,6 +53,7 @@ export interface DailyMetrics {
   impressions: number
   clicks: number
   spend: number
+  reach: number
   cpm: number
   cpc: number
   ctr: number
@@ -59,15 +61,16 @@ export interface DailyMetrics {
 }
 
 export function aggregateDailyMetrics(data: AdMetrics[]): DailyMetrics[] {
-  const byDate: Record<string, { impressions: number; clicks: number; spend: number }> = {}
+  const byDate: Record<string, { impressions: number; clicks: number; spend: number; reach: number }> = {}
 
   for (const row of data) {
     if (!byDate[row.date]) {
-      byDate[row.date] = { impressions: 0, clicks: 0, spend: 0 }
+      byDate[row.date] = { impressions: 0, clicks: 0, spend: 0, reach: 0 }
     }
     byDate[row.date].impressions += row.impressions
     byDate[row.date].clicks += row.clicks
     byDate[row.date].spend += row.spend
+    byDate[row.date].reach += row.reach
   }
 
   return Object.entries(byDate)
@@ -77,6 +80,7 @@ export function aggregateDailyMetrics(data: AdMetrics[]): DailyMetrics[] {
       impressions: d.impressions,
       clicks: d.clicks,
       spend: d.spend,
+      reach: d.reach,
       cpm: d.impressions > 0 ? (d.spend / d.impressions) * 1000 : 0,
       cpc: d.clicks > 0 ? d.spend / d.clicks : 0,
       ctr: d.impressions > 0 ? d.clicks / d.impressions : 0,

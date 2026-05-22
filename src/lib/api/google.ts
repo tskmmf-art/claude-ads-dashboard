@@ -106,6 +106,7 @@ export async function fetchGoogleInsights(
       ctr: impressions > 0 ? clicks / impressions : 0,
       cpc: clicks > 0 ? spend / clicks : 0,
       roas: spend > 0 ? revenue / spend : 0,
+      reach: 0,
     }
   })
 }

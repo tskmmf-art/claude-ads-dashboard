@@ -142,7 +142,7 @@ export default function DashboardPage() {
         {/* Dual charts row */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <DualLineChart
-            title="Impressions & CPM"
+            title="Impressions & Reach"
             data={dailyMetrics}
             isLoading={isLoading}
             lines={[
@@ -154,11 +154,11 @@ export default function DashboardPage() {
                 formatter: formatNumber,
               },
               {
-                key: 'cpm',
-                label: 'CPM',
+                key: 'reach',
+                label: 'Reach',
                 color: '#e05252',
                 yAxisId: 'right',
-                formatter: formatCurrency,
+                formatter: formatNumber,
               },
             ]}
           />

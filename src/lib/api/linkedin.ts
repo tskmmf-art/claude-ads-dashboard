@@ -114,6 +114,7 @@ export async function fetchLinkedInInsights(
       ctr: impressions > 0 ? clicks / impressions : 0,
       cpc: clicks > 0 ? spend / clicks : 0,
       roas: 0,
+      reach: 0,
     }
   })
 }

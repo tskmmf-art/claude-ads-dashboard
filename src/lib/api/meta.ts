@@ -26,7 +26,7 @@ export async function fetchMetaInsights(
   until: string
 ): Promise<AdMetrics[]> {
   const params = new URLSearchParams({
-    fields: 'campaign_id,campaign_name,spend,impressions,clicks,actions,action_values,account_id,account_name',
+    fields: 'campaign_id,campaign_name,spend,impressions,reach,clicks,actions,action_values,account_id,account_name',
     time_range: JSON.stringify({ since, until }),
     time_increment: '1',
     level: 'campaign',
@@ -40,6 +40,7 @@ export async function fetchMetaInsights(
   return (json.data ?? []).map((row: Record<string, unknown>) => {
     const spend = parseFloat(row.spend as string) || 0
     const impressions = parseInt(row.impressions as string) || 0
+    const reach = parseInt(row.reach as string) || 0
     const clicks = parseInt(row.clicks as string) || 0
 
     const actions = (row.actions as Array<{ action_type: string; value: string }>) ?? []
@@ -70,6 +71,7 @@ export async function fetchMetaInsights(
       ctr: impressions > 0 ? clicks / impressions : 0,
       cpc: clicks > 0 ? spend / clicks : 0,
       roas: spend > 0 ? revenue / spend : 0,
+      reach,
     }
   })
 }
