@@ -25,6 +25,7 @@ export interface AwarenessData {
   impressions:    number
   reach:          number
   frequency:      number   // impressions / reach
+  linkClicks:     number
   videoViews25:   number
   videoViews50:   number
   videoViews75:   number
@@ -52,6 +53,7 @@ export async function fetchMetaAwareness(
       'spend',
       'impressions',
       'reach',
+      'actions',
       'video_p25_watched_actions',
       'video_p50_watched_actions',
       'video_p75_watched_actions',
@@ -79,9 +81,10 @@ export async function fetchMetaAwareness(
   const spend       = rows.reduce((s, r) => s + (parseFloat(r.spend as string) || 0), 0)
   const impressions = rows.reduce((s, r) => s + (parseInt(r.impressions as string) || 0), 0)
   const reach       = rows.reduce((s, r) => s + (parseInt(r.reach as string) || 0), 0)
-  const v25         = rows.reduce((s, r) => s + extractVideoAction(r.video_p25_watched_actions as Array<{ action_type: string; value: string }>, 'video_view'), 0)
-  const v50         = rows.reduce((s, r) => s + extractVideoAction(r.video_p50_watched_actions as Array<{ action_type: string; value: string }>, 'video_view'), 0)
-  const v75         = rows.reduce((s, r) => s + extractVideoAction(r.video_p75_watched_actions as Array<{ action_type: string; value: string }>, 'video_view'), 0)
+  const linkClicks  = rows.reduce((s, r) => s + extractVideoAction(r.actions as Array<{ action_type: string; value: string }>, 'link_click'), 0)
+  const v25         = rows.reduce((s, r) => s + extractVideoAction(r.video_p25_watched_actions  as Array<{ action_type: string; value: string }>, 'video_view'), 0)
+  const v50         = rows.reduce((s, r) => s + extractVideoAction(r.video_p50_watched_actions  as Array<{ action_type: string; value: string }>, 'video_view'), 0)
+  const v75         = rows.reduce((s, r) => s + extractVideoAction(r.video_p75_watched_actions  as Array<{ action_type: string; value: string }>, 'video_view'), 0)
   const v100        = rows.reduce((s, r) => s + extractVideoAction(r.video_p100_watched_actions as Array<{ action_type: string; value: string }>, 'video_view'), 0)
 
   return {
@@ -89,6 +92,7 @@ export async function fetchMetaAwareness(
     impressions,
     reach,
     frequency:      reach > 0 ? impressions / reach : 0,
+    linkClicks,
     videoViews25:   v25,
     videoViews50:   v50,
     videoViews75:   v75,
@@ -149,7 +153,8 @@ export async function fetchLinkedInAwareness(
     impressions,
     reach,
     frequency:      reach > 0 ? impressions / reach : 0,
-    videoViews25:   0,   // ikke tilgængeligt fra LinkedIn
+    linkClicks:     0,   // ikke tilgængeligt fra LinkedIn awareness API
+    videoViews25:   0,
     videoViews50:   0,
     videoViews75:   0,
     videoViews100,

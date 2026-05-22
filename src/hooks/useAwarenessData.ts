@@ -30,6 +30,7 @@ export function useAwareness(
 
   const empty: AwarenessData = {
     spend: 0, impressions: 0, reach: 0, frequency: 0,
+    linkClicks: 0,
     videoViews25: 0, videoViews50: 0, videoViews75: 0, videoViews100: 0,
     completionRate: 0, cpm: 0,
   }

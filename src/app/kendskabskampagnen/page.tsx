@@ -23,6 +23,7 @@ import type { DateRange } from '@/types'
 
 const empty: AwarenessData = {
   spend: 0, impressions: 0, reach: 0, frequency: 0,
+  linkClicks: 0,
   videoViews25: 0, videoViews50: 0, videoViews75: 0, videoViews100: 0,
   completionRate: 0, cpm: 0,
 }
@@ -125,6 +126,7 @@ export default function KendskabskampagnenPage() {
       impressions:    acc.impressions    + d.impressions,
       reach:          acc.reach          + d.reach,
       frequency:      0,
+      linkClicks:     acc.linkClicks     + d.linkClicks,
       videoViews25:   acc.videoViews25   + d.videoViews25,
       videoViews50:   acc.videoViews50   + d.videoViews50,
       videoViews75:   acc.videoViews75   + d.videoViews75,
@@ -271,6 +273,7 @@ export default function KendskabskampagnenPage() {
                   <TH right>Reach</TH>
                   <TH right>Eksponeringer</TH>
                   <TH right>Frekvens</TH>
+                  <TH right>Klik på link</TH>
                   <TH right>Visn. 25%</TH>
                   <TH right>Visn. 50%</TH>
                   <TH right>Visn. 75%</TH>
@@ -291,6 +294,7 @@ export default function KendskabskampagnenPage() {
                       <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.reach)}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.impressions)}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.frequency.toFixed(2)}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.videoViews25  > 0 ? formatNumber(d.videoViews25)  : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.videoViews50  > 0 ? formatNumber(d.videoViews50)  : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.videoViews75  > 0 ? formatNumber(d.videoViews75)  : dash}</TD>
@@ -306,6 +310,7 @@ export default function KendskabskampagnenPage() {
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.reach)}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.impressions)}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.frequency.toFixed(2)}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.linkClicks > 0 ? formatNumber(totals.linkClicks) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews25  > 0 ? formatNumber(totals.videoViews25)  : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews50  > 0 ? formatNumber(totals.videoViews50)  : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews75  > 0 ? formatNumber(totals.videoViews75)  : dash}</TD>
