@@ -10,6 +10,7 @@ export interface AdMetrics {
   spend: number
   impressions: number
   clicks: number
+  linkClicks: number
   conversions: number
   ctr: number
   cpc: number
@@ -43,6 +44,7 @@ export interface KpiTotals {
   spend: number
   impressions: number
   clicks: number
+  linkClicks: number
   conversions: number
   ctr: number
   cpc: number

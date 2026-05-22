@@ -49,8 +49,8 @@ export function KpiCards({ totals, isLoading, days }: Props) {
           sub={`Ø ${formatNumber(Math.round(totals.clicks / Math.max(days, 1)))} / dag`}
         />
         <KpiCard
-          label="Konverteringer"
-          value={formatNumber(totals.conversions)}
+          label="Klik på link"
+          value={formatNumber(totals.linkClicks)}
           isLoading={isLoading}
         />
         <KpiCard

@@ -55,6 +55,9 @@ export async function fetchMetaInsights(
     const clicks = parseInt(row.clicks as string) || 0
 
     const actions = (row.actions as Array<{ action_type: string; value: string }>) ?? []
+    const linkClicks = parseInt(
+      actions.find((a) => a.action_type === 'link_click')?.value ?? '0'
+    )
     const conversions =
       actions.find((a) => a.action_type === 'offsite_conversion.fb_pixel_purchase')?.value
       ?? actions.find((a) => a.action_type === 'purchase')?.value
@@ -77,6 +80,7 @@ export async function fetchMetaInsights(
       spend,
       impressions,
       clicks,
+      linkClicks,
       conversions: parseFloat(conversions),
       ctr: impressions > 0 ? clicks / impressions : 0,
       cpc: clicks > 0 ? spend / clicks : 0,

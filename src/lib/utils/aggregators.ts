@@ -2,7 +2,7 @@ import type { AdMetrics, KpiTotals } from '@/types'
 
 export function computeKpiTotals(data: AdMetrics[], days = 30): KpiTotals {
   if (data.length === 0) {
-    return { spend: 0, impressions: 0, clicks: 0, conversions: 0, ctr: 0, cpc: 0, cpm: 0, roas: 0, reach: 0, avgDailySpend: 0 }
+    return { spend: 0, impressions: 0, clicks: 0, linkClicks: 0, conversions: 0, ctr: 0, cpc: 0, cpm: 0, roas: 0, reach: 0, avgDailySpend: 0 }
   }
 
   const totals = data.reduce(
@@ -10,10 +10,11 @@ export function computeKpiTotals(data: AdMetrics[], days = 30): KpiTotals {
       spend: acc.spend + row.spend,
       impressions: acc.impressions + row.impressions,
       clicks: acc.clicks + row.clicks,
+      linkClicks: acc.linkClicks + row.linkClicks,
       conversions: acc.conversions + row.conversions,
       reach: acc.reach + row.reach,
     }),
-    { spend: 0, impressions: 0, clicks: 0, conversions: 0, reach: 0 }
+    { spend: 0, impressions: 0, clicks: 0, linkClicks: 0, conversions: 0, reach: 0 }
   )
 
   return {

@@ -102,6 +102,7 @@ export async function fetchGoogleInsights(
       spend,
       impressions,
       clicks,
+      linkClicks: clicks,
       conversions,
       ctr: impressions > 0 ? clicks / impressions : 0,
       cpc: clicks > 0 ? spend / clicks : 0,
