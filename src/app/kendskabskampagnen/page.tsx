@@ -1,16 +1,15 @@
 'use client'
 
 import * as React from 'react'
-
 import { useAccounts } from '@/hooks/useAdsData'
 import { useAwareness } from '@/hooks/useAwarenessData'
-import { useDateRange } from '@/hooks/useDateRange'
 import { DateRangePicker } from '@/components/filters/DateRangePicker'
 import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   KANALER,
   SAMLET_BUDGET,
+  KAMPAGNE_PERIODE,
   remainingMonths,
   remainingBudget,
   totalRemainingBudget,
@@ -18,6 +17,7 @@ import {
 } from '@/lib/config/kendskabs'
 import type { AwarenessData } from '@/lib/api/awareness'
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils/formatters'
+import type { DateRange } from '@/types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,6 +25,11 @@ const empty: AwarenessData = {
   spend: 0, impressions: 0, reach: 0, frequency: 0,
   videoViews25: 0, videoViews50: 0, videoViews75: 0, videoViews100: 0,
   completionRate: 0, cpm: 0,
+}
+
+const KAMPAGNE_RANGE: DateRange = {
+  from: KAMPAGNE_PERIODE.start,
+  to:   KAMPAGNE_PERIODE.end,
 }
 
 function Stat({ label, value, sub, loading }: {
@@ -56,7 +61,9 @@ const TH = ({ children, right }: { children: React.ReactNode; right?: boolean })
     {children}
   </th>
 )
-const TD = ({ children, right, bold, muted }: { children: React.ReactNode; right?: boolean; bold?: boolean; muted?: boolean }) => (
+const TD = ({ children, right, bold, muted }: {
+  children: React.ReactNode; right?: boolean; bold?: boolean; muted?: boolean
+}) => (
   <td className={`border-b px-4 py-3 text-sm tabular-nums ${right ? 'text-right' : ''} ${bold ? 'font-semibold' : ''} ${muted ? 'text-muted-foreground' : ''}`}>
     {children}
   </td>
@@ -65,16 +72,10 @@ const TD = ({ children, right, bold, muted }: { children: React.ReactNode; right
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function KendskabskampagnenPage() {
-  const { dateRange, setDateRange } = useDateRange()
-
-  // Account state for Meta + LinkedIn
+  const [dateRange, setDateRange] = React.useState<DateRange>(KAMPAGNE_RANGE)
   const [metaAccountId, setMetaAccountId] = React.useState<string | null>(null)
-  const [liAccountId, setLiAccountId] = React.useState<string | null>(null)
-  const [metaEnabled] = React.useState(true)
-  const [liEnabled] = React.useState(true)
 
-  const metaAccounts   = useAccounts('meta',     metaEnabled)
-  const liAccounts     = useAccounts('linkedin', liEnabled)
+  const metaAccounts = useAccounts('meta', true)
 
   React.useEffect(() => {
     if (metaAccounts.accounts.length > 0 && !metaAccountId)
@@ -82,53 +83,40 @@ export default function KendskabskampagnenPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metaAccounts.accounts])
 
-  React.useEffect(() => {
-    if (liAccounts.accounts.length > 0 && !liAccountId)
-      setLiAccountId(liAccounts.accounts[0].id)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liAccounts.accounts])
+  const metaAwareness = useAwareness('meta', metaAccountId, dateRange, true)
+  const isLoading = metaAwareness.isLoading
 
-  // Awareness data
-  const metaAwareness = useAwareness('meta',     metaAccountId, dateRange, metaEnabled)
-  const liAwareness   = useAwareness('linkedin', liAccountId,   dateRange, liEnabled)
-
-  const isLoading = metaAwareness.isLoading || liAwareness.isLoading
-
-  // Map platform id → awareness data
+  // Map kanal-id → AwarenessData (kun Meta har API)
   const apiData: Record<string, AwarenessData> = {
-    meta:     metaAwareness.data,
-    linkedin: liAwareness.data,
-    youtube:  empty,
-    tv2play:  empty,
+    meta:    metaAwareness.data,
+    youtube: empty,
+    tv2play: empty,
   }
 
-  // ── Budget calculations ────────────────────────────────────────────────────
+  // ── Budget ────────────────────────────────────────────────────────────────
 
-  const totalSpent  = KANALER.reduce((s, k) => s + (apiData[k.id]?.spend ?? 0), 0)
-  const budgetLeft  = SAMLET_BUDGET - totalSpent
+  const totalSpent  = apiData['meta'].spend   // kun Meta har live spend
+  const budgetLeft  = totalRemainingBudget(totalSpent)
   const remaining   = remainingMonths()
-  const totalRemBud = totalRemainingBudget()
 
-  function kanalBudgetTilDato(k: KanalConfig) {
+  function kanalSpent(k: KanalConfig) {
     return apiData[k.id]?.spend ?? 0
   }
 
+  function kanalPctAfBudget(k: KanalConfig) {
+    return SAMLET_BUDGET > 0 ? k.budget / SAMLET_BUDGET : 0
+  }
+
   function kanalPctBrugt(k: KanalConfig) {
-    const total = k.monthlyBudget * 12 // samlet kanalbudget
-    const spent = kanalBudgetTilDato(k)
-    return total > 0 ? spent / total : 0
+    return k.budget > 0 ? kanalSpent(k) / k.budget : 0
   }
 
   function kanalPrMaanedFremad(k: KanalConfig) {
-    const kanalLeft = remainingBudget(k) - kanalBudgetTilDato(k)
-    return remaining > 0 ? Math.max(kanalLeft, 0) / remaining : 0
+    const left = remainingBudget(k, kanalSpent(k))
+    return remaining > 0 ? left / remaining : left
   }
 
-  function kanalPctAfBudget(k: KanalConfig) {
-    return SAMLET_BUDGET > 0 ? (k.monthlyBudget * 12) / SAMLET_BUDGET : 0
-  }
-
-  // ── Performance calculations ───────────────────────────────────────────────
+  // ── Performance ───────────────────────────────────────────────────────────
 
   const totals: AwarenessData = KANALER.reduce((acc, k) => {
     const d = apiData[k.id]
@@ -136,13 +124,13 @@ export default function KendskabskampagnenPage() {
       spend:          acc.spend          + d.spend,
       impressions:    acc.impressions    + d.impressions,
       reach:          acc.reach          + d.reach,
-      frequency:      0, // beregnes nedenfor
+      frequency:      0,
       videoViews25:   acc.videoViews25   + d.videoViews25,
       videoViews50:   acc.videoViews50   + d.videoViews50,
       videoViews75:   acc.videoViews75   + d.videoViews75,
       videoViews100:  acc.videoViews100  + d.videoViews100,
-      completionRate: 0, // beregnes nedenfor
-      cpm:            0, // beregnes nedenfor
+      completionRate: 0,
+      cpm:            0,
     }
   }, { ...empty })
   totals.frequency      = totals.reach > 0 ? totals.impressions / totals.reach : 0
@@ -167,14 +155,6 @@ export default function KendskabskampagnenPage() {
                 error={metaAccounts.error}
                 onChange={setMetaAccountId}
               />
-              <AccountSelector
-                platform="linkedin"
-                accounts={liAccounts.accounts}
-                selectedId={liAccountId}
-                isLoading={liAccounts.isLoading}
-                error={liAccounts.error}
-                onChange={setLiAccountId}
-              />
             </div>
             <DateRangePicker dateRange={dateRange} onChange={setDateRange} />
           </div>
@@ -187,14 +167,14 @@ export default function KendskabskampagnenPage() {
         <section>
           <SectionHeader
             title="Budget"
-            description={`Samlet foreningsårsbudget: ${formatCurrency(SAMLET_BUDGET)} · ${remaining} måneder tilbage af foreningsåret`}
+            description={`Kampagneperiode: maj–juni 2026 · Samlet budget: ${formatCurrency(SAMLET_BUDGET)}`}
           />
 
-          {/* Budget summary cards */}
+          {/* Summary cards */}
           <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Stat label="Samlet budget"       value={formatCurrency(SAMLET_BUDGET)}  sub="Hele foreningsåret" />
-            <Stat label="Budget brugt til dato" value={formatCurrency(totalSpent)}   sub="Meta + LinkedIn (API)" loading={isLoading} />
-            <Stat label="Budget tilbage"      value={formatCurrency(budgetLeft)}     sub={`${formatPercent(SAMLET_BUDGET > 0 ? budgetLeft / SAMLET_BUDGET : 0)} tilbage`} loading={isLoading} />
+            <Stat label="Samlet budget"         value={formatCurrency(SAMLET_BUDGET)}    sub="Maj–juni 2026" />
+            <Stat label="Budget brugt til dato" value={formatCurrency(totalSpent)}        sub="Meta (API)" loading={isLoading} />
+            <Stat label="Budget tilbage"        value={formatCurrency(budgetLeft)}        sub={formatPercent(SAMLET_BUDGET > 0 ? budgetLeft / SAMLET_BUDGET : 0) + ' tilbage'} loading={isLoading} />
           </div>
 
           {/* Budget table */}
@@ -203,40 +183,50 @@ export default function KendskabskampagnenPage() {
               <thead>
                 <tr>
                   <TH>Kanal</TH>
-                  <TH right>Budget pr. måned</TH>
+                  <TH right>Budget</TH>
                   <TH right>Procentdel af budget</TH>
                   <TH right>Budget til dato</TH>
-                  <TH right>Procentdel brugt</TH>
-                  <TH right>Rest af foreningsår</TH>
+                  <TH right>Procentdel budget brugt</TH>
+                  <TH right>Budget tilbage</TH>
                   <TH right>Pr. måned fremad</TH>
                 </tr>
               </thead>
               <tbody>
                 {KANALER.map((k) => {
-                  const spent   = kanalBudgetTilDato(k)
+                  const spent   = kanalSpent(k)
                   const loading = isLoading && k.platform !== null
                   return (
                     <tr key={k.id} className="hover:bg-muted/20">
                       <TD bold>{k.name}</TD>
-                      <TD right>{formatCurrency(k.monthlyBudget)}</TD>
+                      <TD right>{formatCurrency(k.budget)}</TD>
                       <TD right muted>{formatPercent(kanalPctAfBudget(k))}</TD>
                       <TD right>
-                        {loading ? <Skeleton className="ml-auto h-4 w-20" /> : formatCurrency(spent)}
+                        {loading
+                          ? <Skeleton className="ml-auto h-4 w-20" />
+                          : k.platform ? formatCurrency(spent) : dash}
                       </TD>
                       <TD right>
-                        {loading ? <Skeleton className="ml-auto h-4 w-16" /> : formatPercent(kanalPctBrugt(k))}
+                        {loading
+                          ? <Skeleton className="ml-auto h-4 w-16" />
+                          : k.platform ? formatPercent(kanalPctBrugt(k)) : dash}
                       </TD>
-                      <TD right muted>{formatCurrency(remainingBudget(k))}</TD>
+                      <TD right muted>
+                        {k.platform
+                          ? loading ? <Skeleton className="ml-auto h-4 w-20" /> : formatCurrency(remainingBudget(k, spent))
+                          : formatCurrency(k.budget)}
+                      </TD>
                       <TD right>
-                        {loading ? <Skeleton className="ml-auto h-4 w-20" /> : formatCurrency(kanalPrMaanedFremad(k))}
+                        {loading
+                          ? <Skeleton className="ml-auto h-4 w-20" />
+                          : remaining > 0 ? formatCurrency(kanalPrMaanedFremad(k)) : dash}
                       </TD>
                     </tr>
                   )
                 })}
-                {/* Totals row */}
-                <tr className="bg-muted/30 font-semibold">
+                {/* Total */}
+                <tr className="bg-muted/30">
                   <TD bold>Total</TD>
-                  <TD right bold>{formatCurrency(KANALER.reduce((s, k) => s + k.monthlyBudget, 0))}</TD>
+                  <TD right bold>{formatCurrency(SAMLET_BUDGET)}</TD>
                   <TD right bold>{formatPercent(1)}</TD>
                   <TD right bold>
                     {isLoading ? <Skeleton className="ml-auto h-4 w-20" /> : formatCurrency(totalSpent)}
@@ -244,9 +234,12 @@ export default function KendskabskampagnenPage() {
                   <TD right bold>
                     {isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatPercent(SAMLET_BUDGET > 0 ? totalSpent / SAMLET_BUDGET : 0)}
                   </TD>
-                  <TD right bold>{formatCurrency(totalRemBud)}</TD>
                   <TD right bold>
-                    {isLoading ? <Skeleton className="ml-auto h-4 w-20" /> : formatCurrency(remaining > 0 ? Math.max(budgetLeft, 0) / remaining : 0)}
+                    {isLoading ? <Skeleton className="ml-auto h-4 w-20" /> : formatCurrency(budgetLeft)}
+                  </TD>
+                  <TD right bold>
+                    {isLoading ? <Skeleton className="ml-auto h-4 w-20" />
+                      : remaining > 0 ? formatCurrency(budgetLeft / remaining) : dash}
                   </TD>
                 </tr>
               </tbody>
@@ -261,12 +254,12 @@ export default function KendskabskampagnenPage() {
             description="Reach, eksponeringer og videovisninger pr. kanal"
           />
 
-          {/* Performance summary cards */}
+          {/* Summary cards */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Eksponeringer"    value={formatNumber(totals.impressions)} loading={isLoading} />
-            <Stat label="Reach"            value={formatNumber(totals.reach)}       loading={isLoading} />
-            <Stat label="Frekvens"         value={totals.frequency.toFixed(2)}      loading={isLoading} sub="eksponeringer pr. person" />
-            <Stat label="CPM"              value={formatCurrency(totals.cpm)}       loading={isLoading} sub="pr. 1.000 eksponeringer" />
+            <Stat label="Eksponeringer" value={formatNumber(totals.impressions)}  loading={isLoading} />
+            <Stat label="Reach"         value={formatNumber(totals.reach)}        loading={isLoading} />
+            <Stat label="Frekvens"      value={totals.frequency.toFixed(2)}       loading={isLoading} sub="eksponeringer pr. person" />
+            <Stat label="CPM"           value={formatCurrency(totals.cpm)}        loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>
 
           {/* Performance table */}
@@ -291,24 +284,24 @@ export default function KendskabskampagnenPage() {
                   const d       = apiData[k.id]
                   const loading = isLoading && k.platform !== null
                   const noApi   = k.platform === null
-                  const sk = (w = 16) => <Skeleton className={`ml-auto h-4 w-${w}`} />
+                  const sk      = () => <Skeleton className="ml-auto h-4 w-16" />
                   return (
                     <tr key={k.id} className="hover:bg-muted/20">
                       <TD bold>{k.name}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.reach)}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.impressions)}</TD>
-                      <TD right>{loading ? sk(12) : noApi ? dash : d.frequency.toFixed(2)}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews25 > 0 ? formatNumber(d.videoViews25) : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews50 > 0 ? formatNumber(d.videoViews50) : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews75 > 0 ? formatNumber(d.videoViews75) : dash}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.frequency.toFixed(2)}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews25  > 0 ? formatNumber(d.videoViews25)  : dash}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews50  > 0 ? formatNumber(d.videoViews50)  : dash}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews75  > 0 ? formatNumber(d.videoViews75)  : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.videoViews100 > 0 ? formatNumber(d.videoViews100) : dash}</TD>
-                      <TD right>{loading ? sk(12) : noApi ? dash : d.videoViews100 > 0 ? formatPercent(d.completionRate) : dash}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews100 > 0 ? formatPercent(d.completionRate) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : formatCurrency(d.cpm)}</TD>
                     </tr>
                   )
                 })}
-                {/* Totals row */}
-                <tr className="bg-muted/30 font-semibold">
+                {/* Total */}
+                <tr className="bg-muted/30">
                   <TD bold>Total</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.reach)}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.impressions)}</TD>
@@ -325,7 +318,7 @@ export default function KendskabskampagnenPage() {
           </div>
 
           <p className="mt-2 text-xs text-muted-foreground">
-            * YouTube Ads og TV2 Play Ads vises ikke i API — tilføj data manuelt i <code className="rounded bg-muted px-1">src/lib/config/kendskabs.ts</code>
+            * YouTube og TV2 Play tilføjes manuelt — opdater <code className="rounded bg-muted px-1">src/lib/config/kendskabs.ts</code>
           </p>
         </section>
 
