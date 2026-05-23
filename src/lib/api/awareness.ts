@@ -102,6 +102,115 @@ export async function fetchMetaAwareness(
   }
 }
 
+// ── Google Ads ────────────────────────────────────────────────────────────────
+
+const GOOGLE_BASE = 'https://googleads.googleapis.com/v20'
+
+async function googleAccessToken(): Promise<string> {
+  const clientId     = process.env.GOOGLE_ADS_CLIENT_ID
+  const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET
+  const refreshToken = process.env.GOOGLE_ADS_REFRESH_TOKEN
+  if (!clientId || !clientSecret || !refreshToken)
+    throw new Error('Google Ads OAuth credentials not set')
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: clientId, client_secret: clientSecret,
+      refresh_token: refreshToken, grant_type: 'refresh_token',
+    }),
+  })
+  if (!res.ok) throw new Error(`Google OAuth failed: ${res.status}`)
+  const j = await res.json()
+  return j.access_token as string
+}
+
+async function googleHeaders(): Promise<Record<string, string>> {
+  const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN
+  if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set')
+  return {
+    Authorization:     `Bearer ${await googleAccessToken()}`,
+    'developer-token': devToken,
+    'Content-Type':    'application/json',
+  }
+}
+
+export async function fetchGoogleAwareness(
+  accountId: string,
+  since: string,
+  until: string
+): Promise<AwarenessData> {
+  const query = `
+    SELECT
+      metrics.cost_micros,
+      metrics.impressions,
+      metrics.clicks,
+      metrics.video_views,
+      metrics.video_quartile_p25_rate,
+      metrics.video_quartile_p50_rate,
+      metrics.video_quartile_p75_rate,
+      metrics.video_quartile_p100_rate
+    FROM campaign
+    WHERE segments.date BETWEEN '${since}' AND '${until}'
+      AND campaign.status != 'REMOVED'
+  `
+
+  const res = await fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
+    method: 'POST',
+    headers: await googleHeaders(),
+    body: JSON.stringify({ query }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Google Ads awareness fetch failed: ${res.status} ${err}`)
+  }
+
+  const json = await res.json()
+  const rows: Array<{
+    metrics: {
+      costMicros?: string
+      impressions?: string
+      clicks?: string
+      videoViews?: string
+      videoQuartileP25Rate?: number
+      videoQuartileP50Rate?: number
+      videoQuartileP75Rate?: number
+      videoQuartileP100Rate?: number
+    }
+  }> = json.results ?? []
+
+  let spend = 0, impressions = 0, clicks = 0
+  let v25 = 0, v50 = 0, v75 = 0, v100 = 0
+
+  for (const row of rows) {
+    const m = row.metrics
+    const imp = parseInt(m.impressions ?? '0') || 0
+    spend       += (parseInt(m.costMicros ?? '0') || 0) / 1_000_000
+    impressions += imp
+    clicks      += parseInt(m.clicks ?? '0') || 0
+    // quartile rates are fractions (0–1) × impressions = views at that threshold
+    v25  += Math.round((m.videoQuartileP25Rate  ?? 0) * imp)
+    v50  += Math.round((m.videoQuartileP50Rate  ?? 0) * imp)
+    v75  += Math.round((m.videoQuartileP75Rate  ?? 0) * imp)
+    v100 += Math.round((m.videoQuartileP100Rate ?? 0) * imp)
+  }
+
+  return {
+    spend,
+    impressions,
+    reach:          0,   // ikke tilgængeligt pr. kampagne i standard Google Ads
+    frequency:      0,
+    linkClicks:     clicks,
+    videoViews25:   v25,
+    videoViews50:   v50,
+    videoViews75:   v75,
+    videoViews100:  v100,
+    completionRate: impressions > 0 ? v100 / impressions : 0,
+    cpm:            impressions > 0 ? (spend / impressions) * 1000 : 0,
+  }
+}
+
 // ── LinkedIn ──────────────────────────────────────────────────────────────────
 
 function urnParam(id: string) {

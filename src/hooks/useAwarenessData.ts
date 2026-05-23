@@ -12,7 +12,7 @@ const fetcher = (url: string) =>
   })
 
 export function useAwareness(
-  platform: 'meta' | 'linkedin',
+  platform: 'meta' | 'linkedin' | 'google',
   accountId: string | null,
   dateRange: DateRange,
   enabled: boolean

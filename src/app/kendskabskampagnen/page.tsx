@@ -74,9 +74,11 @@ const TD = ({ children, right, bold, muted }: {
 
 export default function KendskabskampagnenPage() {
   const [dateRange, setDateRange] = React.useState<DateRange>(KAMPAGNE_RANGE)
-  const [metaAccountId, setMetaAccountId] = React.useState<string | null>(null)
+  const [metaAccountId,   setMetaAccountId]   = React.useState<string | null>(null)
+  const [googleAccountId, setGoogleAccountId] = React.useState<string | null>(null)
 
-  const metaAccounts = useAccounts('meta', true)
+  const metaAccounts   = useAccounts('meta',   true)
+  const googleAccounts = useAccounts('google', true)
 
   React.useEffect(() => {
     if (metaAccounts.accounts.length > 0 && !metaAccountId)
@@ -84,21 +86,30 @@ export default function KendskabskampagnenPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metaAccounts.accounts])
 
-  const metaAwareness = useAwareness('meta', metaAccountId, dateRange, true)
-  const isLoading = metaAwareness.isLoading
+  React.useEffect(() => {
+    if (googleAccounts.accounts.length > 0 && !googleAccountId)
+      setGoogleAccountId(googleAccounts.accounts[0].id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleAccounts.accounts])
 
-  // Map kanal-id → AwarenessData (kun Meta har API)
+  const metaAwareness   = useAwareness('meta',   metaAccountId,   dateRange, true)
+  const googleAwareness = useAwareness('google', googleAccountId, dateRange, true)
+
+  const isLoading = metaAwareness.isLoading || googleAwareness.isLoading
+
+  // Map kanal-id → AwarenessData
   const apiData: Record<string, AwarenessData> = {
     meta:    metaAwareness.data,
+    google:  googleAwareness.data,
     youtube: empty,
     tv2play: empty,
   }
 
   // ── Budget ────────────────────────────────────────────────────────────────
 
-  const totalSpent  = apiData['meta'].spend   // kun Meta har live spend
-  const budgetLeft  = totalRemainingBudget(totalSpent)
-  const remaining   = remainingMonths()
+  const totalSpent = apiData['meta'].spend + apiData['google'].spend
+  const budgetLeft = totalRemainingBudget(totalSpent)
+  const remaining  = remainingMonths()
 
   function kanalSpent(k: KanalConfig) {
     return apiData[k.id]?.spend ?? 0
@@ -115,6 +126,12 @@ export default function KendskabskampagnenPage() {
   function kanalPrMaanedFremad(k: KanalConfig) {
     const left = remainingBudget(k, kanalSpent(k))
     return remaining > 0 ? left / remaining : left
+  }
+
+  function kanalIsLoading(k: KanalConfig) {
+    if (k.platform === 'meta')   return metaAwareness.isLoading
+    if (k.platform === 'google') return googleAwareness.isLoading
+    return false
   }
 
   // ── Performance ───────────────────────────────────────────────────────────
@@ -157,6 +174,14 @@ export default function KendskabskampagnenPage() {
                 error={metaAccounts.error}
                 onChange={setMetaAccountId}
               />
+              <AccountSelector
+                platform="google"
+                accounts={googleAccounts.accounts}
+                selectedId={googleAccountId}
+                isLoading={googleAccounts.isLoading}
+                error={googleAccounts.error}
+                onChange={setGoogleAccountId}
+              />
             </div>
             <DateRangePicker dateRange={dateRange} onChange={setDateRange} />
           </div>
@@ -175,7 +200,7 @@ export default function KendskabskampagnenPage() {
           {/* Summary cards */}
           <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Stat label="Samlet budget"         value={formatCurrency(SAMLET_BUDGET)}    sub="Maj–juni 2026" />
-            <Stat label="Budget brugt til dato" value={formatCurrency(totalSpent)}        sub="Meta (API)" loading={isLoading} />
+            <Stat label="Budget brugt til dato" value={formatCurrency(totalSpent)}        sub="Meta + Google (API)" loading={isLoading} />
             <Stat label="Budget tilbage"        value={formatCurrency(budgetLeft)}        sub={formatPercent(SAMLET_BUDGET > 0 ? budgetLeft / SAMLET_BUDGET : 0) + ' tilbage'} loading={isLoading} />
           </div>
 
@@ -196,12 +221,12 @@ export default function KendskabskampagnenPage() {
               <tbody>
                 {KANALER.map((k) => {
                   const spent   = kanalSpent(k)
-                  const loading = isLoading && k.platform !== null
+                  const loading = kanalIsLoading(k)
                   return (
                     <tr key={k.id} className="hover:bg-muted/20">
                       <TD bold>{k.name}</TD>
-                      <TD right>{formatCurrency(k.budget)}</TD>
-                      <TD right muted>{formatPercent(kanalPctAfBudget(k))}</TD>
+                      <TD right>{k.budget > 0 ? formatCurrency(k.budget) : dash}</TD>
+                      <TD right muted>{k.budget > 0 ? formatPercent(kanalPctAfBudget(k)) : dash}</TD>
                       <TD right>
                         {loading
                           ? <Skeleton className="ml-auto h-4 w-20" />
@@ -210,17 +235,17 @@ export default function KendskabskampagnenPage() {
                       <TD right>
                         {loading
                           ? <Skeleton className="ml-auto h-4 w-16" />
-                          : k.platform ? formatPercent(kanalPctBrugt(k)) : dash}
+                          : k.platform && k.budget > 0 ? formatPercent(kanalPctBrugt(k)) : dash}
                       </TD>
                       <TD right muted>
                         {k.platform
                           ? loading ? <Skeleton className="ml-auto h-4 w-20" /> : formatCurrency(remainingBudget(k, spent))
-                          : formatCurrency(k.budget)}
+                          : k.budget > 0 ? formatCurrency(k.budget) : dash}
                       </TD>
                       <TD right>
                         {loading
                           ? <Skeleton className="ml-auto h-4 w-20" />
-                          : remaining > 0 ? formatCurrency(kanalPrMaanedFremad(k)) : dash}
+                          : remaining > 0 && k.budget > 0 ? formatCurrency(kanalPrMaanedFremad(k)) : dash}
                       </TD>
                     </tr>
                   )
@@ -259,8 +284,8 @@ export default function KendskabskampagnenPage() {
           {/* Summary cards */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Eksponeringer" value={formatNumber(totals.impressions)}  loading={isLoading} />
-            <Stat label="Reach"         value={formatNumber(totals.reach)}        loading={isLoading} />
-            <Stat label="Frekvens"      value={totals.frequency.toFixed(2)}       loading={isLoading} sub="eksponeringer pr. person" />
+            <Stat label="Reach"         value={totals.reach > 0 ? formatNumber(totals.reach) : '—'} loading={isLoading} />
+            <Stat label="Frekvens"      value={totals.frequency > 0 ? totals.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" />
             <Stat label="CPM"           value={formatCurrency(totals.cpm)}        loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>
 
@@ -285,15 +310,15 @@ export default function KendskabskampagnenPage() {
               <tbody>
                 {KANALER.map((k) => {
                   const d       = apiData[k.id]
-                  const loading = isLoading && k.platform !== null
+                  const loading = kanalIsLoading(k)
                   const noApi   = k.platform === null
                   const sk      = () => <Skeleton className="ml-auto h-4 w-16" />
                   return (
                     <tr key={k.id} className="hover:bg-muted/20">
                       <TD bold>{k.name}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.reach)}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.reach > 0 ? formatNumber(d.reach) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.impressions)}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.frequency.toFixed(2)}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.frequency > 0 ? d.frequency.toFixed(2) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.videoViews25  > 0 ? formatNumber(d.videoViews25)  : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.videoViews50  > 0 ? formatNumber(d.videoViews50)  : dash}</TD>
@@ -307,9 +332,9 @@ export default function KendskabskampagnenPage() {
                 {/* Total */}
                 <tr className="bg-muted/30">
                   <TD bold>Total</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.reach)}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.reach > 0 ? formatNumber(totals.reach) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.impressions)}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.frequency.toFixed(2)}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.frequency > 0 ? totals.frequency.toFixed(2) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.linkClicks > 0 ? formatNumber(totals.linkClicks) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews25  > 0 ? formatNumber(totals.videoViews25)  : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews50  > 0 ? formatNumber(totals.videoViews50)  : dash}</TD>
@@ -324,6 +349,7 @@ export default function KendskabskampagnenPage() {
 
           <p className="mt-2 text-xs text-muted-foreground">
             * YouTube og TV2 Play tilføjes manuelt — opdater <code className="rounded bg-muted px-1">src/lib/config/kendskabs.ts</code>
+            &nbsp;· Google Ads reach er ikke tilgængeligt via standard kampagne-API
           </p>
         </section>
 

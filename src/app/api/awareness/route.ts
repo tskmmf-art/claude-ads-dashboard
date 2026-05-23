@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchMetaAwareness, fetchLinkedInAwareness } from '@/lib/api/awareness'
+import { fetchMetaAwareness, fetchLinkedInAwareness, fetchGoogleAwareness } from '@/lib/api/awareness'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
     }
     if (platform === 'linkedin') {
       const data = await fetchLinkedInAwareness(accountId, since, until)
+      return NextResponse.json({ data })
+    }
+    if (platform === 'google') {
+      const data = await fetchGoogleAwareness(accountId, since, until)
       return NextResponse.json({ data })
     }
     return NextResponse.json({ error: 'Invalid platform' }, { status: 400 })

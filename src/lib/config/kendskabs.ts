@@ -13,14 +13,15 @@ export const SAMLET_BUDGET = 150_000 // kr.
 export interface KanalConfig {
   id:       string
   name:     string
-  budget:   number          // kr. for hele kampagneperioden
-  platform: 'meta' | null   // null = manuel/ingen API
+  budget:   number                        // kr. for hele kampagneperioden
+  platform: 'meta' | 'google' | null      // null = manuel/ingen API
 }
 
 export const KANALER: KanalConfig[] = [
-  { id: 'meta',    name: 'Meta Ads',     budget: 40_000, platform: 'meta' },
-  { id: 'youtube', name: 'YouTube Ads',  budget: 50_000, platform: null   },
-  { id: 'tv2play', name: 'TV2 Play Ads', budget: 60_000, platform: null   },
+  { id: 'meta',    name: 'Meta Ads',        budget: 40_000, platform: 'meta'   },
+  { id: 'google',  name: 'Google Ads',      budget:      0, platform: 'google' },
+  { id: 'youtube', name: 'YouTube Ads',     budget: 50_000, platform: null     },
+  { id: 'tv2play', name: 'TV2 Play Ads',    budget: 60_000, platform: null     },
 ]
 
 // Hjælpefunktioner ─────────────────────────────────────────────────────────
