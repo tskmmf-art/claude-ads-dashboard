@@ -34,52 +34,73 @@ async function getAccessToken(): Promise<string> {
   return json.access_token as string
 }
 
-// ── Headers ───────────────────────────────────────────────────────────────────
+// ── Base headers (no login-customer-id) ──────────────────────────────────────
 
-async function buildHeaders(): Promise<Record<string, string>> {
-  const devToken    = process.env.GOOGLE_ADS_DEVELOPER_TOKEN
+async function buildHeaders(loginCustomerId?: string): Promise<Record<string, string>> {
+  const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN
   if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set')
 
   const accessToken = await getAccessToken()
-  return {
-    Authorization:    `Bearer ${accessToken}`,
+  const headers: Record<string, string> = {
+    Authorization:     `Bearer ${accessToken}`,
     'developer-token': devToken,
-    'Content-Type':   'application/json',
+    'Content-Type':    'application/json',
   }
+  if (loginCustomerId) {
+    headers['login-customer-id'] = loginCustomerId
+  }
+  return headers
 }
 
-function customerId() {
-  const id = process.env.GOOGLE_ADS_CUSTOMER_ID
-  if (!id) throw new Error('GOOGLE_ADS_CUSTOMER_ID not set')
-  return id.replace(/-/g, '')
-}
-
-// ── Accounts ──────────────────────────────────────────────────────────────────
+// ── Accounts: discover all non-manager accessible customers ──────────────────
 
 export async function fetchGoogleAccounts(): Promise<AdAccount[]> {
-  const cid = customerId()
-  const query = `SELECT customer_client.id, customer_client.descriptive_name, customer_client.currency_code FROM customer_client WHERE customer_client.status = 'ENABLED'`
+  const headers = await buildHeaders()
 
-  const res = await fetch(`${BASE}/customers/${cid}/googleAds:search`, {
-    method: 'POST',
-    headers: await buildHeaders(),
-    body: JSON.stringify({ query }),
+  // Step 1: list all accessible customer IDs
+  const listRes = await fetch(`${BASE}/customers:listAccessibleCustomers`, {
+    method: 'GET',
+    headers,
   })
+  if (!listRes.ok) {
+    const err = await listRes.text()
+    throw new Error(`Google Ads listAccessibleCustomers failed: ${listRes.status} ${err}`)
+  }
+  const listJson = await listRes.json()
+  const resourceNames: string[] = listJson.resourceNames ?? []
 
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Google Ads accounts fetch failed: ${res.status} ${err}`)
+  if (resourceNames.length === 0) return []
+
+  // Step 2: for each customer, fetch name + manager flag
+  const accounts: AdAccount[] = []
+
+  for (const resourceName of resourceNames) {
+    const cid = resourceName.replace('customers/', '')
+    try {
+      const res = await fetch(`${BASE}/customers/${cid}/googleAds:search`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          query: 'SELECT customer.id, customer.descriptive_name, customer.manager, customer.currency_code FROM customer LIMIT 1',
+        }),
+      })
+      if (!res.ok) continue
+      const json = await res.json()
+      const customer = json.results?.[0]?.customer
+      if (!customer || customer.manager) continue   // skip manager accounts
+
+      accounts.push({
+        id:       customer.id,
+        name:     customer.descriptiveName ?? `Konto ${customer.id}`,
+        platform: 'google' as const,
+        currency: customer.currencyCode ?? 'DKK',
+      })
+    } catch {
+      // skip accounts we can't access
+    }
   }
 
-  const json = await res.json()
-  return (json.results ?? []).map((r: {
-    customerClient: { id: string; descriptiveName: string; currencyCode: string }
-  }) => ({
-    id:       r.customerClient.id,
-    name:     r.customerClient.descriptiveName,
-    platform: 'google' as const,
-    currency: r.customerClient.currencyCode,
-  }))
+  return accounts
 }
 
 // ── Insights ──────────────────────────────────────────────────────────────────
@@ -103,13 +124,15 @@ export async function fetchGoogleInsights(
       segments.date
     FROM campaign
     WHERE segments.date BETWEEN '${since}' AND '${until}'
-      AND campaign.status = 'ENABLED'
+      AND campaign.status != 'REMOVED'
     ORDER BY segments.date ASC
   `
 
+  const headers = await buildHeaders()
+
   const res = await fetch(`${BASE}/customers/${accountId}/googleAds:search`, {
     method: 'POST',
-    headers: await buildHeaders(),
+    headers,
     body: JSON.stringify({ query }),
   })
 
