@@ -1,6 +1,6 @@
 import type { AdAccount, AdMetrics } from '@/types'
 
-const BASE = 'https://googleads.googleapis.com/v16'
+const BASE = 'https://googleads.googleapis.com/v20'
 
 // ── OAuth: exchange refresh token for access token ────────────────────────────
 
