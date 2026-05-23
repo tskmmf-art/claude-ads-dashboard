@@ -18,10 +18,9 @@ export interface KanalConfig {
 }
 
 export const KANALER: KanalConfig[] = [
-  { id: 'meta',    name: 'Meta Ads',        budget: 40_000, platform: 'meta'   },
-  { id: 'google',  name: 'Google Ads',      budget:      0, platform: 'google' },
-  { id: 'youtube', name: 'YouTube Ads',     budget: 50_000, platform: null     },
-  { id: 'tv2play', name: 'TV2 Play Ads',    budget: 60_000, platform: null     },
+  { id: 'meta',    name: 'Meta Ads',     budget: 40_000, platform: 'meta'   },
+  { id: 'youtube', name: 'YouTube Ads',  budget: 50_000, platform: 'google' },
+  { id: 'tv2play', name: 'TV2 Play Ads', budget: 60_000, platform: null     },
 ]
 
 // Hjælpefunktioner ─────────────────────────────────────────────────────────

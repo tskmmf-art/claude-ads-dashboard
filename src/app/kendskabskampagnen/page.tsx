@@ -97,17 +97,16 @@ export default function KendskabskampagnenPage() {
 
   const isLoading = metaAwareness.isLoading || googleAwareness.isLoading
 
-  // Map kanal-id → AwarenessData
+  // Map kanal-id → AwarenessData (youtube bruger Google Ads API)
   const apiData: Record<string, AwarenessData> = {
     meta:    metaAwareness.data,
-    google:  googleAwareness.data,
-    youtube: empty,
+    youtube: googleAwareness.data,
     tv2play: empty,
   }
 
   // ── Budget ────────────────────────────────────────────────────────────────
 
-  const totalSpent = apiData['meta'].spend + apiData['google'].spend
+  const totalSpent = apiData['meta'].spend + apiData['youtube'].spend
   const budgetLeft = totalRemainingBudget(totalSpent)
   const remaining  = remainingMonths()
 
@@ -129,8 +128,8 @@ export default function KendskabskampagnenPage() {
   }
 
   function kanalIsLoading(k: KanalConfig) {
-    if (k.platform === 'meta')   return metaAwareness.isLoading
-    if (k.platform === 'google') return googleAwareness.isLoading
+    if (k.id === 'meta')    return metaAwareness.isLoading
+    if (k.id === 'youtube') return googleAwareness.isLoading
     return false
   }
 
