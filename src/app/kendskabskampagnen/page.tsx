@@ -52,7 +52,7 @@ function ReachCell({ kanalId, value, onSave }: {
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-        className="w-28 rounded border border-blue-400 bg-blue-50 px-2 py-0.5 text-right text-sm tabular-nums outline-none ring-2 ring-blue-300"
+        className="w-24 border-0 border-b-2 border-blue-400 bg-transparent text-right text-sm tabular-nums outline-none"
       />
     )
   }
@@ -61,10 +61,10 @@ function ReachCell({ kanalId, value, onSave }: {
     <button
       onClick={open}
       title={`Klik for at redigere reach for ${kanalId}`}
-      className={`group flex items-center justify-end gap-1 rounded px-1 py-0.5 text-right text-sm tabular-nums transition hover:bg-blue-50 ${value > 0 ? '' : 'text-muted-foreground/40'}`}
+      className={`group inline-flex items-center justify-end gap-1 text-right text-sm tabular-nums transition hover:text-blue-600 ${value > 0 ? '' : 'text-muted-foreground/40'}`}
     >
       {value > 0 ? formatNumber(value) : '— indtast'}
-      <svg className="h-3 w-3 opacity-0 group-hover:opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="h-3 w-3 opacity-0 group-hover:opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 16H9v-3z" />
       </svg>
     </button>
