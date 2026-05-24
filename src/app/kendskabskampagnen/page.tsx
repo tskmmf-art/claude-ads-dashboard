@@ -151,8 +151,12 @@ export default function KendskabskampagnenPage() {
   const googleAccounts = useAccounts('google', true)
 
   React.useEffect(() => {
-    if (metaAccounts.accounts.length > 0 && !metaAccountId)
-      setMetaAccountId(metaAccounts.accounts[0].id)
+    if (metaAccounts.accounts.length > 0 && !metaAccountId) {
+      const preferred = metaAccounts.accounts.find(a =>
+        a.name.toLowerCase().includes('ekstern branding')
+      )
+      setMetaAccountId((preferred ?? metaAccounts.accounts[0]).id)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metaAccounts.accounts])
 
