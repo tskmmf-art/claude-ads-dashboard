@@ -63,10 +63,10 @@ function ReachCell({ kanalId, value, onSave }: {
       title={`Klik for at redigere reach for ${kanalId}`}
       className={`group inline-flex items-center justify-end gap-1 text-right text-sm tabular-nums transition hover:text-blue-600 ${value > 0 ? '' : 'text-muted-foreground/40'}`}
     >
-      {value > 0 ? formatNumber(value) : '— indtast'}
-      <svg className="h-3 w-3 opacity-0 group-hover:opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 16H9v-3z" />
       </svg>
+      {value > 0 ? formatNumber(value) : '— indtast'}
     </button>
   )
 }
