@@ -97,12 +97,25 @@ export default function KendskabskampagnenPage() {
 
   const isLoading = metaAwareness.isLoading || googleAwareness.isLoading
 
+  // Anvend manualReach på kanaler der har det sat — overskriver API-reach og genberegner frekvens
+  function applyManualReach(base: AwarenessData, kanal: KanalConfig): AwarenessData {
+    const reach = kanal.manualReach && kanal.manualReach > 0 ? kanal.manualReach : base.reach
+    return {
+      ...base,
+      reach,
+      frequency: reach > 0 ? base.impressions / reach : base.frequency,
+    }
+  }
+
   // Map kanal-id → AwarenessData (youtube bruger Google Ads API)
-  const apiData: Record<string, AwarenessData> = {
+  const rawData: Record<string, AwarenessData> = {
     meta:    metaAwareness.data,
     youtube: googleAwareness.data,
     tv2play: empty,
   }
+  const apiData: Record<string, AwarenessData> = Object.fromEntries(
+    KANALER.map(k => [k.id, applyManualReach(rawData[k.id] ?? empty, k)])
+  )
 
   // ── Budget ────────────────────────────────────────────────────────────────
 
