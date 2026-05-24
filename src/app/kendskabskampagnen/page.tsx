@@ -19,6 +19,58 @@ import type { AwarenessData } from '@/lib/api/awareness'
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
 
+// ─── Inline reach-editor ──────────────────────────────────────────────────────
+
+function ReachCell({ kanalId, value, onSave }: {
+  kanalId: string
+  value: number
+  onSave: (v: number) => void
+}) {
+  const [editing, setEditing] = React.useState(false)
+  const [draft,   setDraft]   = React.useState('')
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  function open() {
+    setDraft(value > 0 ? String(value) : '')
+    setEditing(true)
+    setTimeout(() => inputRef.current?.select(), 0)
+  }
+
+  function commit() {
+    const n = parseInt(draft.replace(/\D/g, ''), 10)
+    onSave(isNaN(n) ? 0 : n)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="numeric"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+        className="w-28 rounded border border-blue-400 bg-blue-50 px-2 py-0.5 text-right text-sm tabular-nums outline-none ring-2 ring-blue-300"
+      />
+    )
+  }
+
+  return (
+    <button
+      onClick={open}
+      title={`Klik for at redigere reach for ${kanalId}`}
+      className={`group flex items-center justify-end gap-1 rounded px-1 py-0.5 text-right text-sm tabular-nums transition hover:bg-blue-50 ${value > 0 ? '' : 'text-muted-foreground/40'}`}
+    >
+      {value > 0 ? formatNumber(value) : '— indtast'}
+      <svg className="h-3 w-3 opacity-0 group-hover:opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 16H9v-3z" />
+      </svg>
+    </button>
+  )
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const empty: AwarenessData = {
@@ -77,6 +129,24 @@ export default function KendskabskampagnenPage() {
   const [metaAccountId,   setMetaAccountId]   = React.useState<string | null>(null)
   const [googleAccountId, setGoogleAccountId] = React.useState<string | null>(null)
 
+  // Manuel reach pr. kanal — gemmes i localStorage så det overlever genindlæsning
+  const [manualReaches, setManualReaches] = React.useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {}
+    try {
+      return JSON.parse(localStorage.getItem('kendskab_manual_reaches') ?? '{}')
+    } catch { return {} }
+  })
+  function saveReach(kanalId: string, value: number) {
+    const updated = { ...manualReaches, [kanalId]: value }
+    setManualReaches(updated)
+    localStorage.setItem('kendskab_manual_reaches', JSON.stringify(updated))
+  }
+  function getReach(k: KanalConfig): number {
+    // localStorage-værdi har højeste prioritet, derefter config-filen
+    if (manualReaches[k.id] !== undefined) return manualReaches[k.id]
+    return k.manualReach ?? 0
+  }
+
   const metaAccounts   = useAccounts('meta',   true)
   const googleAccounts = useAccounts('google', true)
 
@@ -99,7 +169,8 @@ export default function KendskabskampagnenPage() {
 
   // Anvend manualReach på kanaler der har det sat — overskriver API-reach og genberegner frekvens
   function applyManualReach(base: AwarenessData, kanal: KanalConfig): AwarenessData {
-    const reach = kanal.manualReach && kanal.manualReach > 0 ? kanal.manualReach : base.reach
+    const manual = getReach(kanal)
+    const reach  = manual > 0 ? manual : base.reach
     return {
       ...base,
       reach,
@@ -328,7 +399,11 @@ export default function KendskabskampagnenPage() {
                   return (
                     <tr key={k.id} className="hover:bg-muted/20">
                       <TD bold>{k.name}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.reach > 0 ? formatNumber(d.reach) : dash}</TD>
+                      <TD right>
+                        {loading ? sk() : noApi ? dash : k.manualReach !== undefined
+                          ? <ReachCell kanalId={k.id} value={getReach(k)} onSave={v => saveReach(k.id, v)} />
+                          : d.reach > 0 ? formatNumber(d.reach) : dash}
+                      </TD>
                       <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.impressions)}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.frequency > 0 ? d.frequency.toFixed(2) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
