@@ -22,15 +22,18 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r bg-white shadow-sm">
+    <aside className="flex h-screen w-56 flex-col bg-mmf-dark">
       {/* Logo */}
-      <div className="border-b px-5 py-5">
-        <p className="text-sm font-bold leading-tight tracking-tight">Ads Dashboard</p>
-        <p className="text-xs text-muted-foreground">Meta · LinkedIn</p>
+      <div className="px-5 py-5 border-b border-white/10">
+        <div className="flex items-center gap-2 mb-0.5">
+          <div className="h-2 w-2 rounded-none bg-mmf-red shrink-0" />
+          <p className="text-sm font-bold tracking-tight text-white">MMF Dashboard</p>
+        </div>
+        <p className="text-xs text-white/40 pl-4">Meta · Google · LinkedIn</p>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-0.5 p-3 pt-4">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href
           return (
@@ -38,10 +41,10 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all rounded-sm',
                 active
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-mmf-red text-white'
+                  : 'text-white/50 hover:bg-white/8 hover:text-white/90'
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -50,6 +53,11 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Footer */}
+      <div className="px-5 py-4 border-t border-white/10">
+        <p className="text-xs text-white/25">Maskinmestrenes Forening</p>
+      </div>
     </aside>
   )
 }

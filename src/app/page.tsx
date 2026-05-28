@@ -88,12 +88,15 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-white px-6 py-4 shadow-sm">
         <div className="mx-auto max-w-screen-2xl">
           <div className="flex flex-wrap items-center gap-4">
-            <h1 className="text-base font-bold leading-tight">Overall Performance</h1>
+            <h1 className="text-base font-bold leading-tight flex items-center gap-2">
+              <span className="inline-block h-4 w-1 rounded-none bg-mmf-red" />
+              Overall Performance
+            </h1>
             <div className="flex flex-1 flex-wrap items-center gap-2">
               <PlatformFilter platforms={platformStates} onChange={togglePlatform} />
               {accountSelectors.map(({ platform, hook }) =>
@@ -144,14 +147,14 @@ export default function DashboardPage() {
               {
                 key: 'impressions',
                 label: 'Impressions',
-                color: '#1877F2',
+                color: '#D80070',
                 yAxisId: 'left',
                 formatter: formatNumber,
               },
               {
                 key: 'reach',
                 label: 'Reach',
-                color: '#e05252',
+                color: '#7499B0',
                 yAxisId: 'right',
                 formatter: formatNumber,
               },
@@ -165,14 +168,14 @@ export default function DashboardPage() {
               {
                 key: 'clicks',
                 label: 'Klik',
-                color: '#f59e0b',
+                color: '#B5AE8E',
                 yAxisId: 'left',
                 formatter: formatNumber,
               },
               {
                 key: 'cpc',
                 label: 'CPC',
-                color: '#8b5cf6',
+                color: '#4F7A4C',
                 yAxisId: 'right',
                 formatter: formatCurrency,
               },

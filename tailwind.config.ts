@@ -9,6 +9,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // MMF Brand farver
+        mmf: {
+          red:    '#D80070',
+          grey:   '#76777B',
+          golden: '#B5AE8E',
+          sage:   '#7FAD7A',
+          green:  '#4F7A4C',
+          brown:  '#8A8068',
+          blue:   '#7499B0',
+          dark:   '#2A2A2C',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

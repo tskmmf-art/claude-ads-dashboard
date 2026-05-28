@@ -95,9 +95,9 @@ export interface PlatformBreakdown {
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
-  meta: '#1877F2',
-  google: '#34A853',
-  linkedin: '#0A66C2',
+  meta:     '#D80070',   // MMF Rød
+  google:   '#7499B0',   // MMF Blå
+  linkedin: '#4F7A4C',   // MMF Grøn
 }
 
 export function aggregatePlatformBreakdown(data: AdMetrics[]): PlatformBreakdown[] {
