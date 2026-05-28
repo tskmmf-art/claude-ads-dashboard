@@ -85,20 +85,20 @@ const KAMPAGNE_RANGE: DateRange = {
   to:   KAMPAGNE_PERIODE.end,
 }
 
-function Stat({ label, value, sub, loading, accent = '#B5AE8E', bg = '#FDFBF6' }: {
-  label: string; value: string; sub?: string; loading?: boolean; accent?: string; bg?: string
+function Stat({ label, value, sub, loading }: {
+  label: string; value: string; sub?: string; loading?: boolean
 }) {
   return (
     <div
       className="rounded-xl border p-5 shadow-sm overflow-hidden"
-      style={{ borderLeft: `4px solid ${accent}`, backgroundColor: bg }}
+      style={{ backgroundColor: '#3A3A3C', borderColor: '#3A3A3C' }}
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</p>
       {loading
-        ? <Skeleton className="mt-2 h-8 w-28" />
-        : <p className="mt-1 text-2xl font-bold tracking-tight">{value}</p>
+        ? <Skeleton className="mt-2 h-8 w-28 opacity-20" />
+        : <p className="mt-1 text-2xl font-bold tracking-tight" style={{ color: '#D80070' }}>{value}</p>
       }
-      {sub && !loading && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+      {sub && !loading && <p className="mt-0.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{sub}</p>}
     </div>
   )
 }
@@ -294,9 +294,9 @@ export default function KendskabskampagnenPage() {
 
           {/* Summary cards */}
           <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Stat label="Samlet budget"         value={formatCurrency(SAMLET_BUDGET)}    sub="Maj–juni 2026"          accent="#B5AE8E" bg="#F8F5EC" />
-            <Stat label="Budget brugt til dato" value={formatCurrency(totalSpent)}        sub="Meta + Google (API)"    accent="#D80070" bg="#FFF0F7" loading={isLoading} />
-            <Stat label="Budget tilbage"        value={formatCurrency(budgetLeft)}        sub={formatPercent(SAMLET_BUDGET > 0 ? budgetLeft / SAMLET_BUDGET : 0) + ' tilbage'} accent="#4F7A4C" bg="#EFF6EE" loading={isLoading} />
+            <Stat label="Samlet budget"         value={formatCurrency(SAMLET_BUDGET)}    sub="Maj–juni 2026" />
+            <Stat label="Budget brugt til dato" value={formatCurrency(totalSpent)}        sub="Meta + Google (API)"    loading={isLoading} />
+            <Stat label="Budget tilbage"        value={formatCurrency(budgetLeft)}        sub={formatPercent(SAMLET_BUDGET > 0 ? budgetLeft / SAMLET_BUDGET : 0) + ' tilbage'} loading={isLoading} />
           </div>
 
           {/* Budget table */}
@@ -407,10 +407,10 @@ export default function KendskabskampagnenPage() {
 
           {/* Summary cards */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Eksponeringer" value={formatNumber(totals.impressions)}                         loading={isLoading} accent="#D80070" bg="#FFF0F7" />
-            <Stat label="Reach"         value={totals.reach > 0 ? formatNumber(totals.reach) : '—'}     loading={isLoading} accent="#7499B0" bg="#EEF4F8" />
-            <Stat label="Frekvens"      value={totals.frequency > 0 ? totals.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#B5AE8E" bg="#F8F5EC" />
-            <Stat label="CPM"           value={formatCurrency(totals.cpm)}                               loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#4F7A4C" bg="#EFF6EE" />
+            <Stat label="Eksponeringer" value={formatNumber(totals.impressions)}                          loading={isLoading} />
+            <Stat label="Reach"         value={totals.reach > 0 ? formatNumber(totals.reach) : '—'}      loading={isLoading} />
+            <Stat label="Frekvens"      value={totals.frequency > 0 ? totals.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" />
+            <Stat label="CPM"           value={formatCurrency(totals.cpm)}                                loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>
 
           {/* Performance table */}
