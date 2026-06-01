@@ -278,14 +278,16 @@ export async function fetchGoogleDemographics(
   since: string,
   until: string
 ): Promise<DemoCell[]> {
+  // ad_group resource supports age_range × gender cross-segmentation
   const query = `
     SELECT
       segments.age_range,
       segments.gender,
       metrics.impressions
-    FROM campaign
+    FROM ad_group
     WHERE segments.date BETWEEN '${since}' AND '${until}'
       AND campaign.status != 'REMOVED'
+      AND ad_group.status != 'REMOVED'
   `
 
   const res = await fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
@@ -302,12 +304,20 @@ export async function fetchGoogleDemographics(
   const grouped: Record<string, DemoCell> = {}
 
   for (const r of (json.results ?? [])) {
-    const age    = GOOGLE_AGE_MAP[r.segments?.ageRange]
-    const gender = GOOGLE_GENDER_MAP[r.segments?.gender]
+    // Google Ads API v20 returns enums as uppercase strings
+    const ageRaw    = r.segments?.ageRange    ?? r.segments?.age_range
+    const genderRaw = r.segments?.gender
+
+    const age    = GOOGLE_AGE_MAP[ageRaw]
+    const gender = GOOGLE_GENDER_MAP[genderRaw]
     if (!age || !gender) continue
+
+    const imps = parseInt(r.metrics?.impressions ?? '0') || 0
+    if (imps === 0) continue
+
     const key = `${gender}|${age}`
     if (!grouped[key]) grouped[key] = { age, gender, impressions: 0 }
-    grouped[key].impressions += parseInt(r.metrics?.impressions ?? '0') || 0
+    grouped[key].impressions += imps
   }
 
   return Object.values(grouped)
