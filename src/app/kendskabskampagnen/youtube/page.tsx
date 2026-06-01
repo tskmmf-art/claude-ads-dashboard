@@ -105,10 +105,6 @@ export default function YouTubePage() {
           <Stat label="CPM"           value={formatCurrency(data.cpm)}                            loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          * Eksponeringer = coviewed impressions · Reach opdateres manuelt på hovedsiden
-        </p>
-
         <div>
           <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2">
             <span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />
