@@ -278,49 +278,83 @@ export async function fetchGoogleDemographics(
   since: string,
   until: string
 ): Promise<DemoCell[]> {
-  // ad_group resource supports age_range × gender cross-segmentation
-  const query = `
+  const headers = await googleHeaders()
+
+  // Query age_range_view and gender_view separately — these are the
+  // dedicated resources for demographic criterion data in Google Ads.
+  const ageQuery = `
     SELECT
-      segments.age_range,
-      segments.gender,
+      ad_group_criterion.age_range.type,
       metrics.impressions
-    FROM ad_group
+    FROM age_range_view
+    WHERE segments.date BETWEEN '${since}' AND '${until}'
+      AND campaign.status != 'REMOVED'
+      AND ad_group.status != 'REMOVED'
+  `
+  const genderQuery = `
+    SELECT
+      ad_group_criterion.gender.type,
+      metrics.impressions
+    FROM gender_view
     WHERE segments.date BETWEEN '${since}' AND '${until}'
       AND campaign.status != 'REMOVED'
       AND ad_group.status != 'REMOVED'
   `
 
-  const res = await fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
-    method: 'POST',
-    headers: await googleHeaders(),
-    body: JSON.stringify({ query }),
-  })
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Google demographics fetch failed: ${res.status} ${err}`)
+  const [ageRes, genderRes] = await Promise.all([
+    fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
+      method: 'POST', headers, body: JSON.stringify({ query: ageQuery }),
+    }),
+    fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
+      method: 'POST', headers, body: JSON.stringify({ query: genderQuery }),
+    }),
+  ])
+
+  if (!ageRes.ok) {
+    const err = await ageRes.text()
+    throw new Error(`Google age demographics fetch failed: ${ageRes.status} ${err}`)
+  }
+  if (!genderRes.ok) {
+    const err = await genderRes.text()
+    throw new Error(`Google gender demographics fetch failed: ${genderRes.status} ${err}`)
   }
 
-  const json = await res.json()
-  const grouped: Record<string, DemoCell> = {}
+  const [ageJson, genderJson] = await Promise.all([ageRes.json(), genderRes.json()])
 
-  for (const r of (json.results ?? [])) {
-    // Google Ads API v20 returns enums as uppercase strings
-    const ageRaw    = r.segments?.ageRange    ?? r.segments?.age_range
-    const genderRaw = r.segments?.gender
-
-    const age    = GOOGLE_AGE_MAP[ageRaw]
-    const gender = GOOGLE_GENDER_MAP[genderRaw]
-    if (!age || !gender) continue
-
-    const imps = parseInt(r.metrics?.impressions ?? '0') || 0
-    if (imps === 0) continue
-
-    const key = `${gender}|${age}`
-    if (!grouped[key]) grouped[key] = { age, gender, impressions: 0 }
-    grouped[key].impressions += imps
+  // Sum impressions by age group
+  const ageImps: Record<string, number> = {}
+  for (const r of (ageJson.results ?? [])) {
+    const age = GOOGLE_AGE_MAP[r.adGroupCriterion?.ageRange?.type]
+    if (!age) continue
+    ageImps[age] = (ageImps[age] ?? 0) + (parseInt(r.metrics?.impressions ?? '0') || 0)
   }
 
-  return Object.values(grouped)
+  // Sum impressions by gender
+  const genderImps: Record<string, number> = {}
+  for (const r of (genderJson.results ?? [])) {
+    const gender = GOOGLE_GENDER_MAP[r.adGroupCriterion?.gender?.type]
+    if (!gender) continue
+    genderImps[gender] = (genderImps[gender] ?? 0) + (parseInt(r.metrics?.impressions ?? '0') || 0)
+  }
+
+  const totalAge    = Object.values(ageImps).reduce((s, v) => s + v, 0)
+  const totalGender = Object.values(genderImps).reduce((s, v) => s + v, 0)
+
+  // Estimate 2D distribution: age_share × gender_share × avg(totalAge, totalGender)
+  const total = (totalAge + totalGender) / 2
+  const cells: DemoCell[] = []
+
+  for (const age of Object.keys(ageImps)) {
+    for (const gender of Object.keys(genderImps) as ('male' | 'female')[]) {
+      const ageShare    = totalAge    > 0 ? ageImps[age]       / totalAge    : 0
+      const genderShare = totalGender > 0 ? genderImps[gender] / totalGender : 0
+      const impressions = Math.round(ageShare * genderShare * total)
+      if (impressions > 0)
+        cells.push({ age, gender, impressions })
+    }
+  }
+
+  return cells
 }
 
 // ── LinkedIn ──────────────────────────────────────────────────────────────────
