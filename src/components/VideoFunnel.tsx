@@ -16,6 +16,8 @@ interface Props {
   color?:   string
 }
 
+const BAR_MAX_PX = 180
+
 export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
   const imp = data.impressions
 
@@ -30,22 +32,29 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
   const max = Math.max(...stages.map(s => s.value), 1)
 
   return (
-    <div className="rounded-xl border bg-white shadow-sm p-5">
-      <div className="flex items-end justify-around gap-2 h-52">
+    <div className="rounded-xl border bg-white shadow-sm p-6">
+      {/* Chart area */}
+      <div className="flex items-end justify-around gap-3" style={{ height: BAR_MAX_PX + 40 }}>
         {stages.map(({ label, value }) => {
-          const pct = value / max
+          const ratio = value / max
+          const barH  = Math.max(Math.round(ratio * BAR_MAX_PX), 6)
+
           return (
-            <div key={label} className="flex flex-col items-center gap-1 flex-1">
-              {/* Value label */}
-              <span className="text-xs tabular-nums font-semibold text-foreground text-center">
+            <div key={label} className="flex flex-col items-center gap-1.5 flex-1">
+              {/* Value above bar */}
+              <span className="text-xs font-semibold tabular-nums text-foreground text-center leading-tight">
                 {loading ? '' : formatNumber(value)}
               </span>
+
               {/* Bar */}
-              <div className="w-full rounded-t-md transition-all duration-700 relative"
+              <div
+                className="w-full rounded-t-lg"
                 style={{
-                  height: loading ? '60%' : `${Math.max(pct * 100, 4)}%`,
+                  height:          loading ? BAR_MAX_PX * 0.5 : barH,
                   backgroundColor: color,
-                  opacity: loading ? 0.15 : 0.2 + pct * 0.8,
+                  opacity:         loading ? 0.12 : 0.25 + ratio * 0.75,
+                  transition:      'height 0.6s ease, opacity 0.6s ease',
+                  minHeight:       6,
                 }}
               />
             </div>
@@ -54,15 +63,15 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
       </div>
 
       {/* X-axis labels */}
-      <div className="flex justify-around mt-2 gap-2">
+      <div className="flex justify-around gap-3 mt-2">
         {stages.map(({ label, value }) => {
-          const pct = imp > 0 && label !== 'Eksponeringer' ? value / imp : null
+          const pctOfImp = imp > 0 && label !== 'Eksponeringer' ? value / imp : null
           return (
             <div key={label} className="flex-1 flex flex-col items-center gap-0.5">
               <span className="text-xs text-muted-foreground text-center leading-tight">{label}</span>
-              {pct !== null && !loading && (
+              {pctOfImp !== null && !loading && (
                 <span className="text-xs font-semibold" style={{ color }}>
-                  {formatPercent(pct)}
+                  {formatPercent(pctOfImp)}
                 </span>
               )}
             </div>
@@ -70,7 +79,8 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
         })}
       </div>
 
-      <div className="mt-3 pt-3 border-t flex items-center justify-between">
+      {/* Footer */}
+      <div className="mt-4 pt-3 border-t flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Fuldførelsesrate</span>
         {loading
           ? <Skeleton className="h-5 w-16" />
