@@ -22,7 +22,6 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
   const imp = data.impressions
 
   const stages = [
-    { label: 'Eksponeringer', value: imp },
     ...(data.videoViews25 != null ? [{ label: '25% set',  value: data.videoViews25 }] : []),
     ...(data.videoViews50 != null ? [{ label: '50% set',  value: data.videoViews50 }] : []),
     ...(data.videoViews75 != null ? [{ label: '75% set',  value: data.videoViews75 }] : []),
@@ -34,7 +33,7 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
   return (
     <div className="rounded-xl border bg-white shadow-sm p-6">
       {/* Chart area */}
-      <div className="flex items-end justify-around gap-3" style={{ height: BAR_MAX_PX + 40 }}>
+      <div className="flex items-end justify-around gap-8" style={{ height: BAR_MAX_PX + 40 }}>
         {stages.map(({ label, value }) => {
           const ratio = value / max
           const barH  = Math.max(Math.round(ratio * BAR_MAX_PX), 6)
@@ -63,7 +62,7 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
       </div>
 
       {/* X-axis labels */}
-      <div className="flex justify-around gap-3 mt-2">
+      <div className="flex justify-around gap-8 mt-2">
         {stages.map(({ label, value }) => {
           const pctOfImp = imp > 0 && label !== 'Eksponeringer' ? value / imp : null
           return (
