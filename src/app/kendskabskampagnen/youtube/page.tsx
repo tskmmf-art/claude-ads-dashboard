@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CampaignGantt } from '@/components/CampaignGantt'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
 import { DeviceStats } from '@/components/DeviceStats'
+import { DevicePieChart } from '@/components/DevicePieChart'
 import { VideoFunnel } from '@/components/VideoFunnel'
 import { useDemographics } from '@/hooks/useDemographics'
 import { useDeviceStats } from '@/hooks/useDeviceStats'
@@ -126,18 +127,25 @@ export default function YouTubePage() {
 
         <div>
           <SectionHead>Videovisninger — YouTube</SectionHead>
-          <VideoFunnel
-            data={{
-              impressions:    data.impressions,
-              videoViews25:   data.videoViews25,
-              videoViews50:   data.videoViews50,
-              videoViews75:   data.videoViews75,
-              videoViews100:  data.videoViews100,
-              completionRate: data.completionRate,
-            }}
-            loading={isLoading}
-            color={BRAND}
-          />
+          <div className="grid grid-cols-4 gap-4">
+            <div className="col-span-3">
+              <VideoFunnel
+                data={{
+                  impressions:    data.impressions,
+                  videoViews25:   data.videoViews25,
+                  videoViews50:   data.videoViews50,
+                  videoViews75:   data.videoViews75,
+                  videoViews100:  data.videoViews100,
+                  completionRate: data.completionRate,
+                }}
+                loading={isLoading}
+                color={BRAND}
+              />
+            </div>
+            <div className="col-span-1">
+              <DevicePieChart stats={deviceData} loading={deviceLoading} color={BRAND} />
+            </div>
+          </div>
         </div>
 
         <div>
