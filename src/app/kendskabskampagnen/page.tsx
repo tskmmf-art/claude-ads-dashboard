@@ -422,7 +422,6 @@ export default function KendskabskampagnenPage() {
                   <TH>Kanal</TH>
                   <TH right>Reach</TH>
                   <TH right>Eksponeringer</TH>
-                  <TH right>Eksp. (samsening)</TH>
                   <TH right>Frekvens</TH>
                   <TH right>Klik på link</TH>
                   <TH right>Visn. 25%</TH>
@@ -447,8 +446,7 @@ export default function KendskabskampagnenPage() {
                           ? <ReachCell kanalId={k.id} value={getReach(k)} onSave={v => saveReach(k.id, v)} />
                           : d.reach > 0 ? formatNumber(d.reach) : dash}
                       </TD>
-                      <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.impressions)}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.coviewedImpressions > 0 ? formatNumber(d.coviewedImpressions) : dash}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : formatNumber(k.platform === 'google' ? d.coviewedImpressions : d.impressions)}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.frequency > 0 ? d.frequency.toFixed(2) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.videoViews25  > 0 ? formatNumber(d.videoViews25)  : dash}</TD>
@@ -464,8 +462,7 @@ export default function KendskabskampagnenPage() {
                 <tr className="bg-muted/30">
                   <TD bold>Total</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.reach > 0 ? formatNumber(totals.reach) : dash}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.impressions)}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.coviewedImpressions > 0 ? formatNumber(totals.coviewedImpressions) : dash}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.impressions - apiData['youtube'].impressions + apiData['youtube'].coviewedImpressions)}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.frequency > 0 ? totals.frequency.toFixed(2) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.linkClicks > 0 ? formatNumber(totals.linkClicks) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews25  > 0 ? formatNumber(totals.videoViews25)  : dash}</TD>
