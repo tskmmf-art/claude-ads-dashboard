@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CampaignGantt } from '@/components/CampaignGantt'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
 import { DeviceStats } from '@/components/DeviceStats'
+import { VideoFunnel } from '@/components/VideoFunnel'
 import { useDemographics } from '@/hooks/useDemographics'
 import { useDeviceStats } from '@/hooks/useDeviceStats'
 import { KAMPAGNE_PERIODE } from '@/lib/config/kendskabs'
@@ -107,6 +108,22 @@ export default function MetaPage() {
             <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" />
             <Stat label="CPM"           value={formatCurrency(data.cpm)}                              loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>
+        </div>
+
+        <div>
+          <SectionHead>Videovisninger — Meta</SectionHead>
+          <VideoFunnel
+            data={{
+              impressions:    data.impressions,
+              videoViews25:   data.videoViews25,
+              videoViews50:   data.videoViews50,
+              videoViews75:   data.videoViews75,
+              videoViews100:  data.videoViews100,
+              completionRate: data.completionRate,
+            }}
+            loading={isLoading}
+            color={BRAND}
+          />
         </div>
 
         <div>

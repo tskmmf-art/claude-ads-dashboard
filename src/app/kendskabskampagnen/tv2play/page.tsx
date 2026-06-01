@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { CampaignGantt } from '@/components/CampaignGantt'
+import { VideoFunnel } from '@/components/VideoFunnel'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 
 const BRAND = '#E40012'
@@ -12,7 +13,7 @@ const TV2_PHASES = [
   { name: 'Pause',          startWeek: 25, endWeek: 26, budget:      0, color: '#F5A8AE' },
 ]
 
-const TV2_DEFAULTS = { impressions: 140883, reach: 69639, cpm: 269.86 }
+const TV2_DEFAULTS = { impressions: 140883, reach: 69639, cpm: 269.86, completionRate: 0.9763 }
 
 function TV2Logo() {
   return (
@@ -85,6 +86,18 @@ export default function TV2PlayPage() {
             <Stat label="Frekvens"      value={frequency.toFixed(2)}   sub="eksponeringer pr. person" />
             <Stat label="CPM"           value={formatCurrency(tv2Data.cpm)} sub="pr. 1.000 eksponeringer" />
           </div>
+        </div>
+
+        <div>
+          <SectionHead>Videovisninger — TV2 Play</SectionHead>
+          <VideoFunnel
+            data={{
+              impressions:    tv2Data.impressions,
+              videoViews100:  Math.round(tv2Data.impressions * tv2Data.completionRate),
+              completionRate: tv2Data.completionRate,
+            }}
+            color={BRAND}
+          />
         </div>
 
         <p className="text-xs text-muted-foreground">
