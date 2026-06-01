@@ -6,11 +6,18 @@ import { useAwareness } from '@/hooks/useAwarenessData'
 import { DateRangePicker } from '@/components/filters/DateRangePicker'
 import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CampaignGantt } from '@/components/CampaignGantt'
 import { KAMPAGNE_PERIODE } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
 
 const KAMPAGNE_RANGE: DateRange = { from: KAMPAGNE_PERIODE.start, to: KAMPAGNE_PERIODE.end }
+
+const META_PHASES = [
+  { name: 'Video Views',        startWeek: 19, endWeek: 21, budget: 15_000, color: '#059669' },
+  { name: 'Reach + Retargeting', startWeek: 22, endWeek: 24, budget: 15_000, color: '#34D399' },
+  { name: 'High Frequency',     startWeek: 25, endWeek: 26, budget: 10_000, color: '#6EE7B7' },
+]
 
 function Stat({ label, value, sub, loading, accent = '#D80070' }: {
   label: string; value: string; sub?: string; loading?: boolean; accent?: string
@@ -69,12 +76,14 @@ export default function MetaPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-screen-2xl p-6">
+      <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
+        <CampaignGantt phases={META_PHASES} />
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Eksponeringer" value={formatNumber(data.impressions)}                              loading={isLoading} accent="#D80070" />
-          <Stat label="Reach"         value={data.reach > 0 ? formatNumber(data.reach) : '—'}            loading={isLoading} accent="#D80070" />
-          <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'}       loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
-          <Stat label="CPM"           value={formatCurrency(data.cpm)}                                    loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
+          <Stat label="Eksponeringer" value={formatNumber(data.impressions)}                        loading={isLoading} accent="#D80070" />
+          <Stat label="Reach"         value={data.reach > 0 ? formatNumber(data.reach) : '—'}      loading={isLoading} accent="#D80070" />
+          <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
+          <Stat label="CPM"           value={formatCurrency(data.cpm)}                              loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
         </div>
       </main>
     </div>

@@ -6,12 +6,19 @@ import { useAwareness } from '@/hooks/useAwarenessData'
 import { DateRangePicker } from '@/components/filters/DateRangePicker'
 import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CampaignGantt } from '@/components/CampaignGantt'
 import { KAMPAGNE_PERIODE, KANALER } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
 
 const KAMPAGNE_RANGE: DateRange = { from: KAMPAGNE_PERIODE.start, to: KAMPAGNE_PERIODE.end }
 const youtubeKanal = KANALER.find(k => k.id === 'youtube')!
+
+const YOUTUBE_PHASES = [
+  { name: 'Reach (Skippable)', startWeek: 19, endWeek: 21, budget: 15_000, color: '#DC2626' },
+  { name: 'Non-skip',          startWeek: 19, endWeek: 24, budget: 25_000, color: '#F87171' },
+  { name: 'Retargeting',       startWeek: 22, endWeek: 26, budget: 10_000, color: '#FCA5A5' },
+]
 
 function Stat({ label, value, sub, loading, accent = '#D80070' }: {
   label: string; value: string; sub?: string; loading?: boolean; accent?: string
@@ -35,7 +42,6 @@ export default function YouTubePage() {
   const [dateRange, setDateRange] = React.useState<DateRange>(KAMPAGNE_RANGE)
   const [accountId, setAccountId] = React.useState<string | null>(null)
 
-  // Manuel reach gemt i localStorage (deles med hovedsiden)
   const [manualReach] = React.useState<number>(() => {
     if (typeof window === 'undefined') return youtubeKanal.manualReach ?? 0
     try {
@@ -53,11 +59,9 @@ export default function YouTubePage() {
 
   const { data, isLoading } = useAwareness('google', accountId, dateRange, true)
 
-  // YouTube: coviewedImpressions bruges som eksp.-tæller; reach er manuelt
   const reach       = manualReach > 0 ? manualReach : data.reach
   const impressions = data.coviewedImpressions
   const frequency   = reach > 0 ? impressions / reach : data.frequency
-  const cpm         = data.cpm
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,14 +87,16 @@ export default function YouTubePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-screen-2xl p-6">
+      <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
+        <CampaignGantt phases={YOUTUBE_PHASES} />
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Eksponeringer" value={impressions > 0 ? formatNumber(impressions) : '—'}  loading={isLoading} accent="#D80070" />
           <Stat label="Reach"         value={reach > 0 ? formatNumber(reach) : '—'}              loading={isLoading} accent="#D80070" />
           <Stat label="Frekvens"      value={frequency > 0 ? frequency.toFixed(2) : '—'}         loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
-          <Stat label="CPM"           value={formatCurrency(cpm)}                                 loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
+          <Stat label="CPM"           value={formatCurrency(data.cpm)}                            loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           * Eksponeringer = coviewed impressions · Reach opdateres manuelt på hovedsiden
         </p>
       </main>

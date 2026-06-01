@@ -1,7 +1,16 @@
 'use client'
 
 import * as React from 'react'
+import { CampaignGantt } from '@/components/CampaignGantt'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
+
+const TV2_PHASES = [
+  { name: 'Launch (Heavy)', startWeek: 19, endWeek: 21, budget: 40_000, color: '#4472CA' },
+  { name: 'Sustain',        startWeek: 22, endWeek: 24, budget: 20_000, color: '#7BAFD4' },
+  { name: 'Pause',          startWeek: 25, endWeek: 26, budget:      0, color: '#B8D4EC' },
+]
+
+const TV2_DEFAULTS = { impressions: 140883, reach: 69639, cpm: 269.86 }
 
 function Stat({ label, value, sub, accent = '#D80070' }: {
   label: string; value: string; sub?: string; accent?: string
@@ -17,8 +26,6 @@ function Stat({ label, value, sub, accent = '#D80070' }: {
     </div>
   )
 }
-
-const TV2_DEFAULTS = { spend: 48000, impressions: 140883, reach: 69639, cpm: 269.86, completionRate: 0.9763 }
 
 export default function TV2PlayPage() {
   const [tv2Data] = React.useState(() => {
@@ -42,14 +49,16 @@ export default function TV2PlayPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-screen-2xl p-6">
+      <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
+        <CampaignGantt phases={TV2_PHASES} />
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Eksponeringer" value={formatNumber(tv2Data.impressions)}              accent="#D80070" />
-          <Stat label="Reach"         value={formatNumber(tv2Data.reach)}                    accent="#D80070" />
-          <Stat label="Frekvens"      value={frequency.toFixed(2)}                           accent="#D80070" sub="eksponeringer pr. person" />
-          <Stat label="CPM"           value={formatCurrency(tv2Data.cpm)}                    accent="#D80070" sub="pr. 1.000 eksponeringer" />
+          <Stat label="Eksponeringer" value={formatNumber(tv2Data.impressions)}  accent="#D80070" />
+          <Stat label="Reach"         value={formatNumber(tv2Data.reach)}        accent="#D80070" />
+          <Stat label="Frekvens"      value={frequency.toFixed(2)}               accent="#D80070" sub="eksponeringer pr. person" />
+          <Stat label="CPM"           value={formatCurrency(tv2Data.cpm)}        accent="#D80070" sub="pr. 1.000 eksponeringer" />
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           * Data indtastet manuelt — rediger tallene på hovedsiden
         </p>
       </main>
