@@ -20,6 +20,11 @@ function liHeaders() {
   }
 }
 
+export interface DeviceStat {
+  device:      string   // 'Mobile' | 'Desktop' | 'Tablet' | 'TV' | …
+  impressions: number
+}
+
 export interface DemoCell {
   age:         string            // '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+'
   gender:      'male' | 'female'
@@ -222,6 +227,91 @@ export async function fetchGoogleAwareness(
     completionRate: impressions > 0 ? v100 / impressions : 0,
     cpm:            impressions > 0 ? (spend / impressions) * 1000 : 0,
   }
+}
+
+// ── Meta device stats ─────────────────────────────────────────────────────────
+
+const META_DEVICE_MAP: Record<string, string> = {
+  mobile_app:         'Mobile',
+  mobile_web:         'Mobile',
+  desktop:            'Desktop',
+  instagram_stories:  'Mobile',
+  unknown:            'Andet',
+}
+
+export async function fetchMetaDeviceStats(
+  accountId: string,
+  since: string,
+  until: string
+): Promise<DeviceStat[]> {
+  const params = new URLSearchParams({
+    fields:      'impressions',
+    breakdowns:  'device_platform',
+    time_range:  JSON.stringify({ since, until }),
+    level:       'account',
+    access_token: metaToken(),
+  })
+
+  const res = await fetch(`${META_BASE}/${accountId}/insights?${params}`)
+  if (!res.ok) throw new Error(`Meta device stats fetch failed: ${res.status}`)
+  const json = await res.json()
+
+  const grouped: Record<string, number> = {}
+  for (const row of (json.data ?? [])) {
+    const device = META_DEVICE_MAP[row.device_platform] ?? 'Andet'
+    grouped[device] = (grouped[device] ?? 0) + (parseInt(row.impressions) || 0)
+  }
+
+  return Object.entries(grouped)
+    .map(([device, impressions]) => ({ device, impressions }))
+    .sort((a, b) => b.impressions - a.impressions)
+}
+
+// ── Google device stats ────────────────────────────────────────────────────────
+
+const GOOGLE_DEVICE_MAP: Record<string, string> = {
+  MOBILE:        'Mobile',
+  DESKTOP:       'Desktop',
+  TABLET:        'Tablet',
+  CONNECTED_TV:  'TV',
+  OTHER:         'Andet',
+}
+
+export async function fetchGoogleDeviceStats(
+  accountId: string,
+  since: string,
+  until: string
+): Promise<DeviceStat[]> {
+  const query = `
+    SELECT
+      segments.device,
+      metrics.impressions
+    FROM campaign
+    WHERE segments.date BETWEEN '${since}' AND '${until}'
+      AND campaign.status != 'REMOVED'
+  `
+
+  const res = await fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
+    method: 'POST',
+    headers: await googleHeaders(),
+    body: JSON.stringify({ query }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Google device stats fetch failed: ${res.status} ${err}`)
+  }
+
+  const json = await res.json()
+  const grouped: Record<string, number> = {}
+
+  for (const r of (json.results ?? [])) {
+    const device = GOOGLE_DEVICE_MAP[r.segments?.device] ?? 'Andet'
+    grouped[device] = (grouped[device] ?? 0) + (parseInt(r.metrics?.impressions ?? '0') || 0)
+  }
+
+  return Object.entries(grouped)
+    .map(([device, impressions]) => ({ device, impressions }))
+    .sort((a, b) => b.impressions - a.impressions)
 }
 
 // ── Meta demographics ─────────────────────────────────────────────────────────

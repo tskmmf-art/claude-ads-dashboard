@@ -8,7 +8,9 @@ import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CampaignGantt } from '@/components/CampaignGantt'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
+import { DeviceStats } from '@/components/DeviceStats'
 import { useDemographics } from '@/hooks/useDemographics'
+import { useDeviceStats } from '@/hooks/useDeviceStats'
 import { KAMPAGNE_PERIODE, KANALER } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
@@ -80,7 +82,8 @@ export default function YouTubePage() {
   }, [accounts.accounts])
 
   const { data, isLoading } = useAwareness('google', accountId, dateRange, true)
-  const { data: demoData, isLoading: demoLoading } = useDemographics('google', accountId, dateRange, true)
+  const { data: demoData,   isLoading: demoLoading   } = useDemographics('google', accountId, dateRange, true)
+  const { data: deviceData, isLoading: deviceLoading } = useDeviceStats('google', accountId, dateRange, true)
 
   const reach       = manualReach > 0 ? manualReach : data.reach
   const impressions = data.coviewedImpressions
@@ -118,6 +121,11 @@ export default function YouTubePage() {
             <Stat label="Frekvens"      value={frequency > 0 ? frequency.toFixed(2) : '—'}         loading={isLoading} sub="eksponeringer pr. person" />
             <Stat label="CPM"           value={formatCurrency(data.cpm)}                            loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>
+        </div>
+
+        <div>
+          <SectionHead>Enheder — YouTube</SectionHead>
+          <DeviceStats stats={deviceData} loading={deviceLoading} color={BRAND} />
         </div>
 
         <div>

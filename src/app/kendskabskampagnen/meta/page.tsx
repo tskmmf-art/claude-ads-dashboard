@@ -8,7 +8,9 @@ import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CampaignGantt } from '@/components/CampaignGantt'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
+import { DeviceStats } from '@/components/DeviceStats'
 import { useDemographics } from '@/hooks/useDemographics'
+import { useDeviceStats } from '@/hooks/useDeviceStats'
 import { KAMPAGNE_PERIODE } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
@@ -70,7 +72,8 @@ export default function MetaPage() {
   }, [accounts.accounts])
 
   const { data, isLoading } = useAwareness('meta', accountId, dateRange, true)
-  const { data: demoData, isLoading: demoLoading } = useDemographics('meta', accountId, dateRange, true)
+  const { data: demoData,   isLoading: demoLoading   } = useDemographics('meta', accountId, dateRange, true)
+  const { data: deviceData, isLoading: deviceLoading } = useDeviceStats('meta', accountId, dateRange, true)
 
   return (
     <div className="min-h-screen bg-background">
@@ -104,6 +107,11 @@ export default function MetaPage() {
             <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" />
             <Stat label="CPM"           value={formatCurrency(data.cpm)}                              loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>
+        </div>
+
+        <div>
+          <SectionHead>Enheder — Meta</SectionHead>
+          <DeviceStats stats={deviceData} loading={deviceLoading} color={BRAND} />
         </div>
 
         <div>
