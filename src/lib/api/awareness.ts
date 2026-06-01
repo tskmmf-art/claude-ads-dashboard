@@ -226,7 +226,7 @@ export async function fetchGoogleAwareness(
 
 // ── Meta demographics ─────────────────────────────────────────────────────────
 
-const ALLOWED_AGES = new Set(['18-24', '25-34', '35-44', '45-54', '55-64', '65+'])
+const ALLOWED_AGES = new Set(['18-24', '25-34', '35-44', '45-54', '55-64'])
 
 export async function fetchMetaDemographics(
   accountId: string,
