@@ -19,12 +19,14 @@ import type { AwarenessData } from '@/lib/api/awareness'
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
 
-// ─── Inline reach-editor ──────────────────────────────────────────────────────
+// ─── Generisk inline-editor ───────────────────────────────────────────────────
 
-function ReachCell({ kanalId, value, onSave }: {
-  kanalId: string
+function ManualCell({ value, onSave, display, placeholder = '— indtast', inputWidth = 'w-24' }: {
   value: number
   onSave: (v: number) => void
+  display: (v: number) => string
+  placeholder?: string
+  inputWidth?: string
 }) {
   const [editing, setEditing] = React.useState(false)
   const [draft,   setDraft]   = React.useState('')
@@ -37,7 +39,7 @@ function ReachCell({ kanalId, value, onSave }: {
   }
 
   function commit() {
-    const n = parseInt(draft.replace(/\D/g, ''), 10)
+    const n = parseFloat(draft.replace(/[^\d.,]/g, '').replace(',', '.'))
     onSave(isNaN(n) ? 0 : n)
     setEditing(false)
   }
@@ -47,12 +49,12 @@ function ReachCell({ kanalId, value, onSave }: {
       <input
         ref={inputRef}
         type="text"
-        inputMode="numeric"
+        inputMode="decimal"
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-        className="w-24 border-0 border-b-2 border-blue-400 bg-transparent text-right text-sm tabular-nums outline-none"
+        className={`${inputWidth} border-0 border-b-2 border-blue-400 bg-transparent text-right text-sm tabular-nums outline-none`}
       />
     )
   }
@@ -60,13 +62,12 @@ function ReachCell({ kanalId, value, onSave }: {
   return (
     <button
       onClick={open}
-      title={`Klik for at redigere reach for ${kanalId}`}
       className={`group inline-flex items-center justify-end gap-1 text-right text-sm tabular-nums transition hover:text-blue-600 ${value > 0 ? '' : 'text-muted-foreground/40'}`}
     >
       <svg className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 16H9v-3z" />
       </svg>
-      {value > 0 ? formatNumber(value) : '— indtast'}
+      {value > 0 ? display(value) : placeholder}
     </button>
   )
 }
@@ -132,12 +133,11 @@ export default function KendskabskampagnenPage() {
   const [metaAccountId,   setMetaAccountId]   = React.useState<string | null>(null)
   const [googleAccountId, setGoogleAccountId] = React.useState<string | null>(null)
 
-  // Manuel reach pr. kanal — gemmes i localStorage så det overlever genindlæsning
+  // Manuel reach pr. kanal (YouTube) — gemmes i localStorage
   const [manualReaches, setManualReaches] = React.useState<Record<string, number>>(() => {
     if (typeof window === 'undefined') return {}
-    try {
-      return JSON.parse(localStorage.getItem('kendskab_manual_reaches') ?? '{}')
-    } catch { return {} }
+    try { return JSON.parse(localStorage.getItem('kendskab_manual_reaches') ?? '{}') }
+    catch { return {} }
   })
   function saveReach(kanalId: string, value: number) {
     const updated = { ...manualReaches, [kanalId]: value }
@@ -145,9 +145,24 @@ export default function KendskabskampagnenPage() {
     localStorage.setItem('kendskab_manual_reaches', JSON.stringify(updated))
   }
   function getReach(k: KanalConfig): number {
-    // localStorage-værdi har højeste prioritet, derefter config-filen
     if (manualReaches[k.id] !== undefined) return manualReaches[k.id]
     return k.manualReach ?? 0
+  }
+
+  // Manuel TV2 Play data — alle felter redigerbare, præ-udfyldt fra TV2 Connect screenshot
+  interface Tv2Data { spend: number; impressions: number; reach: number; cpm: number; completionRate: number }
+  const TV2_DEFAULTS: Tv2Data = { spend: 48000, impressions: 140883, reach: 69639, cpm: 269.86, completionRate: 0.9763 }
+  const [tv2Data, setTv2Data] = React.useState<Tv2Data>(() => {
+    if (typeof window === 'undefined') return TV2_DEFAULTS
+    try {
+      const stored = localStorage.getItem('kendskab_tv2_data')
+      return stored ? { ...TV2_DEFAULTS, ...JSON.parse(stored) } : TV2_DEFAULTS
+    } catch { return TV2_DEFAULTS }
+  })
+  function saveTv2Field(field: keyof Tv2Data, value: number) {
+    const updated = { ...tv2Data, [field]: value }
+    setTv2Data(updated)
+    localStorage.setItem('kendskab_tv2_data', JSON.stringify(updated))
   }
 
   const metaAccounts   = useAccounts('meta',   true)
@@ -187,11 +202,23 @@ export default function KendskabskampagnenPage() {
     }
   }
 
-  // Map kanal-id → AwarenessData (youtube bruger Google Ads API)
+  // TV2 Play: byg AwarenessData fra manuelt indtastede tal
+  const tv2AwarenessData: AwarenessData = {
+    ...empty,
+    spend:          tv2Data.spend,
+    impressions:    tv2Data.impressions,
+    reach:          tv2Data.reach,
+    frequency:      tv2Data.reach > 0 ? tv2Data.impressions / tv2Data.reach : 0,
+    cpm:            tv2Data.cpm,
+    completionRate: tv2Data.completionRate,
+    videoViews100:  Math.round(tv2Data.impressions * tv2Data.completionRate),
+  }
+
+  // Map kanal-id → AwarenessData (youtube bruger Google Ads API, tv2play er manuel)
   const rawData: Record<string, AwarenessData> = {
     meta:    metaAwareness.data,
     youtube: googleAwareness.data,
-    tv2play: empty,
+    tv2play: tv2AwarenessData,
   }
   const apiData: Record<string, AwarenessData> = Object.fromEntries(
     KANALER.map(k => [k.id, applyManualReach(rawData[k.id] ?? empty, k)])
@@ -199,7 +226,7 @@ export default function KendskabskampagnenPage() {
 
   // ── Budget ────────────────────────────────────────────────────────────────
 
-  const totalSpent = apiData['meta'].spend + apiData['youtube'].spend
+  const totalSpent = apiData['meta'].spend + apiData['youtube'].spend + apiData['tv2play'].spend
   const budgetLeft = totalRemainingBudget(totalSpent)
   const remaining  = remainingMonths()
 
@@ -326,15 +353,17 @@ export default function KendskabskampagnenPage() {
                       <TD right>
                         {loading
                           ? <Skeleton className="ml-auto h-4 w-20" />
-                          : k.platform ? formatCurrency(spent) : dash}
+                          : k.id === 'tv2play'
+                            ? <ManualCell value={tv2Data.spend} onSave={v => saveTv2Field('spend', v)} display={formatCurrency} />
+                            : k.platform ? formatCurrency(spent) : dash}
                       </TD>
                       <TD right>
                         {loading
                           ? <Skeleton className="ml-auto h-4 w-16" />
-                          : k.platform && k.budget > 0 ? formatPercent(kanalPctBrugt(k)) : dash}
+                          : (k.platform || k.id === 'tv2play') && k.budget > 0 ? formatPercent(kanalPctBrugt(k)) : dash}
                       </TD>
                       <TD right muted>
-                        {k.platform
+                        {k.platform || k.id === 'tv2play'
                           ? loading ? <Skeleton className="ml-auto h-4 w-20" /> : formatCurrency(remainingBudget(k, spent))
                           : k.budget > 0 ? formatCurrency(k.budget) : dash}
                       </TD>
@@ -436,25 +465,46 @@ export default function KendskabskampagnenPage() {
                 {KANALER.map((k) => {
                   const d       = apiData[k.id]
                   const loading = kanalIsLoading(k)
-                  const noApi   = k.platform === null
+                  const isTv2   = k.id === 'tv2play'
                   const sk      = () => <Skeleton className="ml-auto h-4 w-16" />
                   return (
                     <tr key={k.id} className="hover:bg-muted/20">
                       <TD bold>{k.name}</TD>
+                      {/* Reach */}
                       <TD right>
-                        {loading ? sk() : noApi ? dash : k.manualReach !== undefined
-                          ? <ReachCell kanalId={k.id} value={getReach(k)} onSave={v => saveReach(k.id, v)} />
-                          : d.reach > 0 ? formatNumber(d.reach) : dash}
+                        {loading ? sk() : isTv2
+                          ? <ManualCell value={tv2Data.reach} onSave={v => saveTv2Field('reach', v)} display={formatNumber} />
+                          : k.manualReach !== undefined
+                            ? <ManualCell value={getReach(k)} onSave={v => saveReach(k.id, v)} display={formatNumber} />
+                            : d.reach > 0 ? formatNumber(d.reach) : dash}
                       </TD>
-                      <TD right>{loading ? sk() : noApi ? dash : formatNumber(k.platform === 'google' ? d.coviewedImpressions : d.impressions)}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.frequency > 0 ? d.frequency.toFixed(2) : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews25  > 0 ? formatNumber(d.videoViews25)  : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews50  > 0 ? formatNumber(d.videoViews50)  : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews75  > 0 ? formatNumber(d.videoViews75)  : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews100 > 0 ? formatNumber(d.videoViews100) : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : d.videoViews100 > 0 ? formatPercent(d.completionRate) : dash}</TD>
-                      <TD right>{loading ? sk() : noApi ? dash : formatCurrency(d.cpm)}</TD>
+                      {/* Eksponeringer */}
+                      <TD right>
+                        {loading ? sk() : isTv2
+                          ? <ManualCell value={tv2Data.impressions} onSave={v => saveTv2Field('impressions', Math.round(v))} display={formatNumber} />
+                          : formatNumber(k.platform === 'google' ? d.coviewedImpressions : d.impressions)}
+                      </TD>
+                      {/* Frekvens — beregnet */}
+                      <TD right>{loading ? sk() : d.frequency > 0 ? d.frequency.toFixed(2) : dash}</TD>
+                      {/* Klik på link */}
+                      <TD right>{loading ? sk() : isTv2 ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
+                      {/* Video-kvartiler */}
+                      <TD right>{loading ? sk() : isTv2 ? dash : d.videoViews25  > 0 ? formatNumber(d.videoViews25)  : dash}</TD>
+                      <TD right>{loading ? sk() : isTv2 ? dash : d.videoViews50  > 0 ? formatNumber(d.videoViews50)  : dash}</TD>
+                      <TD right>{loading ? sk() : isTv2 ? dash : d.videoViews75  > 0 ? formatNumber(d.videoViews75)  : dash}</TD>
+                      <TD right>{loading ? sk() : d.videoViews100 > 0 ? formatNumber(d.videoViews100) : dash}</TD>
+                      {/* Completion rate */}
+                      <TD right>
+                        {loading ? sk() : isTv2
+                          ? <ManualCell value={tv2Data.completionRate * 100} onSave={v => saveTv2Field('completionRate', v / 100)} display={v => formatPercent(v / 100)} inputWidth="w-20" />
+                          : d.videoViews100 > 0 ? formatPercent(d.completionRate) : dash}
+                      </TD>
+                      {/* CPM */}
+                      <TD right>
+                        {loading ? sk() : isTv2
+                          ? <ManualCell value={tv2Data.cpm} onSave={v => saveTv2Field('cpm', v)} display={formatCurrency} />
+                          : formatCurrency(d.cpm)}
+                      </TD>
                     </tr>
                   )
                 })}
@@ -477,8 +527,7 @@ export default function KendskabskampagnenPage() {
           </div>
 
           <p className="mt-2 text-xs text-muted-foreground">
-            * YouTube og TV2 Play tilføjes manuelt — opdater <code className="rounded bg-muted px-1">src/lib/config/kendskabs.ts</code>
-            &nbsp;· Google Ads reach er ikke tilgængeligt via standard kampagne-API
+            * TV2 Play og YouTube reach opdateres manuelt — klik på et tal for at redigere det · Google Ads reach er ikke tilgængeligt via standard API
           </p>
           </div>
         </section>
