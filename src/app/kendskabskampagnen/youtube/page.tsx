@@ -88,13 +88,19 @@ export default function YouTubePage() {
       </header>
 
       <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
-        <CampaignGantt phases={YOUTUBE_PHASES} />
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground mb-3">Kampagneplan for YouTube</h2>
+          <CampaignGantt phases={YOUTUBE_PHASES} />
+        </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground mb-3">Resultater for YouTube</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Eksponeringer" value={impressions > 0 ? formatNumber(impressions) : '—'}  loading={isLoading} accent="#D80070" />
           <Stat label="Reach"         value={reach > 0 ? formatNumber(reach) : '—'}              loading={isLoading} accent="#D80070" />
           <Stat label="Frekvens"      value={frequency > 0 ? frequency.toFixed(2) : '—'}         loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
           <Stat label="CPM"           value={formatCurrency(data.cpm)}                            loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">
           * Eksponeringer = coviewed impressions · Reach opdateres manuelt på hovedsiden

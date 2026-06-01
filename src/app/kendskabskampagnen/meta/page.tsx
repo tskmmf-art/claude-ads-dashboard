@@ -77,13 +77,19 @@ export default function MetaPage() {
       </header>
 
       <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
-        <CampaignGantt phases={META_PHASES} />
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground mb-3">Kampagneplan for Meta</h2>
+          <CampaignGantt phases={META_PHASES} />
+        </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground mb-3">Resultater for Meta</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Eksponeringer" value={formatNumber(data.impressions)}                        loading={isLoading} accent="#D80070" />
           <Stat label="Reach"         value={data.reach > 0 ? formatNumber(data.reach) : '—'}      loading={isLoading} accent="#D80070" />
           <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
           <Stat label="CPM"           value={formatCurrency(data.cpm)}                              loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
+          </div>
         </div>
       </main>
     </div>

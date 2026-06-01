@@ -50,13 +50,19 @@ export default function TV2PlayPage() {
       </header>
 
       <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
-        <CampaignGantt phases={TV2_PHASES} />
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground mb-3">Kampagneplan for TV2 Play</h2>
+          <CampaignGantt phases={TV2_PHASES} />
+        </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground mb-3">Resultater for TV2 Play</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Eksponeringer" value={formatNumber(tv2Data.impressions)}  accent="#D80070" />
           <Stat label="Reach"         value={formatNumber(tv2Data.reach)}        accent="#D80070" />
           <Stat label="Frekvens"      value={frequency.toFixed(2)}               accent="#D80070" sub="eksponeringer pr. person" />
           <Stat label="CPM"           value={formatCurrency(tv2Data.cpm)}        accent="#D80070" sub="pr. 1.000 eksponeringer" />
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">
           * Data indtastet manuelt — rediger tallene på hovedsiden
