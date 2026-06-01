@@ -101,8 +101,8 @@ export default function MetaPage() {
             Køn og alder — Meta
           </h2>
           <div className="grid grid-cols-2 gap-4">
-            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#059669" metric="impressions" title="Eksponeringer"      ageGroups={['18-24','25-34','35-44','45-54','55-64']} />
-            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#D80070" metric="completions"  title="Videogennemførelse" ageGroups={['18-24','25-34','35-44','45-54','55-64']} />
+            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#059669" metric="impressions" title="Eksponeringer" />
+            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#D80070" metric="completions"  title="Videogennemførelse" />
           </div>
         </div>
       </main>
