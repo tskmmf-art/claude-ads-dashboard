@@ -36,7 +36,7 @@ export default function YouTubePage() {
   const [accountId, setAccountId] = React.useState<string | null>(null)
 
   // Manuel reach gemt i localStorage (deles med hovedsiden)
-  const [manualReach, setManualReach] = React.useState<number>(() => {
+  const [manualReach] = React.useState<number>(() => {
     if (typeof window === 'undefined') return youtubeKanal.manualReach ?? 0
     try {
       const stored = JSON.parse(localStorage.getItem('kendskab_manual_reaches') ?? '{}')

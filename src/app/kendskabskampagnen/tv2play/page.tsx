@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 
 function Stat({ label, value, sub, accent = '#D80070' }: {
@@ -22,7 +21,7 @@ function Stat({ label, value, sub, accent = '#D80070' }: {
 const TV2_DEFAULTS = { spend: 48000, impressions: 140883, reach: 69639, cpm: 269.86, completionRate: 0.9763 }
 
 export default function TV2PlayPage() {
-  const [tv2Data, setTv2Data] = React.useState(() => {
+  const [tv2Data] = React.useState(() => {
     if (typeof window === 'undefined') return TV2_DEFAULTS
     try {
       const stored = localStorage.getItem('kendskab_tv2_data')
