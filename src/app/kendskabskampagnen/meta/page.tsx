@@ -7,6 +7,8 @@ import { DateRangePicker } from '@/components/filters/DateRangePicker'
 import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CampaignGantt } from '@/components/CampaignGantt'
+import { DemographicHeatmap } from '@/components/DemographicHeatmap'
+import { useDemographics } from '@/hooks/useDemographics'
 import { KAMPAGNE_PERIODE } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
@@ -50,7 +52,8 @@ export default function MetaPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts.accounts])
 
-  const { data, isLoading } = useAwareness('meta', accountId, dateRange, true)
+  const { data, isLoading }   = useAwareness('meta', accountId, dateRange, true)
+  const { data: demoData, isLoading: demoLoading } = useDemographics('meta', accountId, dateRange, true)
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,6 +93,14 @@ export default function MetaPage() {
           <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
           <Stat label="CPM"           value={formatCurrency(data.cpm)}                              loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
           </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2">
+            <span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />
+            Køn og alder — Meta
+          </h2>
+          <DemographicHeatmap cells={demoData} loading={demoLoading} color="#059669" />
         </div>
       </main>
     </div>

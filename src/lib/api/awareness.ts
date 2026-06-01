@@ -20,6 +20,12 @@ function liHeaders() {
   }
 }
 
+export interface DemoCell {
+  age:         string            // '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+'
+  gender:      'male' | 'female'
+  impressions: number
+}
+
 export interface AwarenessData {
   spend:               number
   impressions:         number
@@ -215,6 +221,96 @@ export async function fetchGoogleAwareness(
     completionRate: impressions > 0 ? v100 / impressions : 0,
     cpm:            impressions > 0 ? (spend / impressions) * 1000 : 0,
   }
+}
+
+// ── Meta demographics ─────────────────────────────────────────────────────────
+
+const ALLOWED_AGES = new Set(['18-24', '25-34', '35-44', '45-54', '55-64', '65+'])
+
+export async function fetchMetaDemographics(
+  accountId: string,
+  since: string,
+  until: string
+): Promise<DemoCell[]> {
+  const params = new URLSearchParams({
+    fields:      'impressions',
+    breakdowns:  'age,gender',
+    time_range:  JSON.stringify({ since, until }),
+    level:       'account',
+    access_token: metaToken(),
+  })
+
+  const res = await fetch(`${META_BASE}/${accountId}/insights?${params}`)
+  if (!res.ok) throw new Error(`Meta demographics fetch failed: ${res.status}`)
+  const json = await res.json()
+
+  const cells: DemoCell[] = []
+  for (const row of (json.data ?? [])) {
+    if (row.gender === 'unknown') continue
+    if (!ALLOWED_AGES.has(row.age)) continue
+    cells.push({
+      age:         row.age,
+      gender:      row.gender as 'male' | 'female',
+      impressions: parseInt(row.impressions) || 0,
+    })
+  }
+  return cells
+}
+
+// ── Google demographics ────────────────────────────────────────────────────────
+
+const GOOGLE_AGE_MAP: Record<string, string> = {
+  AGE_RANGE_18_24: '18-24',
+  AGE_RANGE_25_34: '25-34',
+  AGE_RANGE_35_44: '35-44',
+  AGE_RANGE_45_54: '45-54',
+  AGE_RANGE_55_64: '55-64',
+  AGE_RANGE_65_UP: '65+',
+}
+
+const GOOGLE_GENDER_MAP: Record<string, 'male' | 'female'> = {
+  MALE:   'male',
+  FEMALE: 'female',
+}
+
+export async function fetchGoogleDemographics(
+  accountId: string,
+  since: string,
+  until: string
+): Promise<DemoCell[]> {
+  const query = `
+    SELECT
+      segments.age_range,
+      segments.gender,
+      metrics.impressions
+    FROM campaign
+    WHERE segments.date BETWEEN '${since}' AND '${until}'
+      AND campaign.status != 'REMOVED'
+  `
+
+  const res = await fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
+    method: 'POST',
+    headers: await googleHeaders(),
+    body: JSON.stringify({ query }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Google demographics fetch failed: ${res.status} ${err}`)
+  }
+
+  const json = await res.json()
+  const grouped: Record<string, DemoCell> = {}
+
+  for (const r of (json.results ?? [])) {
+    const age    = GOOGLE_AGE_MAP[r.segments?.ageRange]
+    const gender = GOOGLE_GENDER_MAP[r.segments?.gender]
+    if (!age || !gender) continue
+    const key = `${gender}|${age}`
+    if (!grouped[key]) grouped[key] = { age, gender, impressions: 0 }
+    grouped[key].impressions += parseInt(r.metrics?.impressions ?? '0') || 0
+  }
+
+  return Object.values(grouped)
 }
 
 // ── LinkedIn ──────────────────────────────────────────────────────────────────

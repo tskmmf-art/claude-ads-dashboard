@@ -7,6 +7,8 @@ import { DateRangePicker } from '@/components/filters/DateRangePicker'
 import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CampaignGantt } from '@/components/CampaignGantt'
+import { DemographicHeatmap } from '@/components/DemographicHeatmap'
+import { useDemographics } from '@/hooks/useDemographics'
 import { KAMPAGNE_PERIODE, KANALER } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
@@ -57,7 +59,8 @@ export default function YouTubePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts.accounts])
 
-  const { data, isLoading } = useAwareness('google', accountId, dateRange, true)
+  const { data, isLoading }   = useAwareness('google', accountId, dateRange, true)
+  const { data: demoData, isLoading: demoLoading } = useDemographics('google', accountId, dateRange, true)
 
   const reach       = manualReach > 0 ? manualReach : data.reach
   const impressions = data.coviewedImpressions
@@ -105,6 +108,14 @@ export default function YouTubePage() {
         <p className="text-xs text-muted-foreground">
           * Eksponeringer = coviewed impressions · Reach opdateres manuelt på hovedsiden
         </p>
+
+        <div>
+          <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2">
+            <span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />
+            Køn og alder — YouTube
+          </h2>
+          <DemographicHeatmap cells={demoData} loading={demoLoading} color="#DC2626" />
+        </div>
       </main>
     </div>
   )
