@@ -13,29 +13,46 @@ import { KAMPAGNE_PERIODE } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
 
+const BRAND = '#1877F2'
 const KAMPAGNE_RANGE: DateRange = { from: KAMPAGNE_PERIODE.start, to: KAMPAGNE_PERIODE.end }
 
 const META_PHASES = [
-  { name: 'Video Views',        startWeek: 19, endWeek: 21, budget: 15_000, color: '#059669' },
-  { name: 'Reach + Retargeting', startWeek: 22, endWeek: 24, budget: 15_000, color: '#34D399' },
-  { name: 'High Frequency',     startWeek: 25, endWeek: 26, budget: 10_000, color: '#6EE7B7' },
+  { name: 'Video Views',         startWeek: 19, endWeek: 21, budget: 15_000, color: '#1877F2' },
+  { name: 'Reach + Retargeting', startWeek: 22, endWeek: 24, budget: 15_000, color: '#55A3F5' },
+  { name: 'High Frequency',      startWeek: 25, endWeek: 26, budget: 10_000, color: '#A8CEFB' },
 ]
 
-function Stat({ label, value, sub, loading, accent = '#D80070' }: {
-  label: string; value: string; sub?: string; loading?: boolean; accent?: string
+function MetaLogo() {
+  return (
+    <svg width="80" height="26" viewBox="0 0 80 26" fill="none">
+      {/* Meta "M" ribbon shape */}
+      <path d="M4 20C4 17 5.5 14 8 11.5C10.5 9 13 8 15 10C16.5 11.5 17 13.5 17 16C17 18.5 17.5 20.5 19.5 20.5C21.5 20.5 22.5 18 22.5 14.5C22.5 10 20 6.5 15.5 5C11 3.5 6 6 3.5 11" stroke="#1877F2" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+      {/* wordmark */}
+      <text x="28" y="19" fontFamily="'Helvetica Neue',Arial,sans-serif" fontSize="17" fontWeight="700" fill="#1877F2" letterSpacing="-0.3">meta</text>
+    </svg>
+  )
+}
+
+function Stat({ label, value, sub, loading }: {
+  label: string; value: string; sub?: string; loading?: boolean
 }) {
   return (
-    <div
-      className="rounded-xl bg-white p-5 shadow-sm border border-border overflow-hidden relative"
-      style={{ borderLeft: `4px solid ${accent}` }}
-    >
+    <div className="rounded-xl bg-white p-5 shadow-sm border border-border overflow-hidden relative"
+      style={{ borderLeft: `4px solid ${BRAND}` }}>
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
-      {loading
-        ? <Skeleton className="mt-2 h-8 w-28" />
-        : <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">{value}</p>
-      }
+      {loading ? <Skeleton className="mt-2 h-8 w-28" />
+        : <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">{value}</p>}
       {sub && !loading && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
     </div>
+  )
+}
+
+function SectionHead({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2">
+      <span className="inline-block h-5 w-1 rounded-none" style={{ background: BRAND }} />
+      {children}
+    </h2>
   )
 }
 
@@ -52,27 +69,21 @@ export default function MetaPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts.accounts])
 
-  const { data, isLoading }   = useAwareness('meta', accountId, dateRange, true)
+  const { data, isLoading } = useAwareness('meta', accountId, dateRange, true)
   const { data: demoData, isLoading: demoLoading } = useDemographics('meta', accountId, dateRange, true)
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-white px-6 py-4 shadow-sm">
+      <header className="border-b bg-white px-6 py-4 shadow-sm" style={{ borderTop: `3px solid ${BRAND}` }}>
         <div className="mx-auto max-w-screen-2xl">
           <div className="flex flex-wrap items-center gap-4">
-            <h1 className="text-base font-bold flex items-center gap-2">
-              <span className="inline-block h-4 w-1 rounded-none bg-mmf-red" />
-              Kendskabskampagnen — Meta
-            </h1>
+            <div className="flex items-center gap-3">
+              <MetaLogo />
+              <span className="text-sm text-muted-foreground">Kendskabskampagnen</span>
+            </div>
             <div className="flex flex-1 flex-wrap items-center gap-2">
-              <AccountSelector
-                platform="meta"
-                accounts={accounts.accounts}
-                selectedId={accountId}
-                isLoading={accounts.isLoading}
-                error={accounts.error}
-                onChange={setAccountId}
-              />
+              <AccountSelector platform="meta" accounts={accounts.accounts} selectedId={accountId}
+                isLoading={accounts.isLoading} error={accounts.error} onChange={setAccountId} />
             </div>
             <DateRangePicker dateRange={dateRange} onChange={setDateRange} />
           </div>
@@ -81,28 +92,25 @@ export default function MetaPage() {
 
       <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2"><span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />Kampagneplan for Meta</h2>
+          <SectionHead>Kampagneplan for Meta</SectionHead>
           <CampaignGantt phases={META_PHASES} />
         </div>
 
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2"><span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />Resultater for Meta</h2>
+          <SectionHead>Resultater for Meta</SectionHead>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Eksponeringer" value={formatNumber(data.impressions)}                        loading={isLoading} accent="#D80070" />
-          <Stat label="Reach"         value={data.reach > 0 ? formatNumber(data.reach) : '—'}      loading={isLoading} accent="#D80070" />
-          <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
-          <Stat label="CPM"           value={formatCurrency(data.cpm)}                              loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
+            <Stat label="Eksponeringer" value={formatNumber(data.impressions)}                        loading={isLoading} />
+            <Stat label="Reach"         value={data.reach > 0 ? formatNumber(data.reach) : '—'}      loading={isLoading} />
+            <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" />
+            <Stat label="CPM"           value={formatCurrency(data.cpm)}                              loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2">
-            <span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />
-            Køn og alder — Meta
-          </h2>
+          <SectionHead>Køn og alder — Meta</SectionHead>
           <div className="grid grid-cols-2 gap-4">
-            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#4472CA" metric="impressions" title="Eksponeringer" />
-            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#D80070" metric="completions"  title="Videogennemførelse" />
+            <DemographicHeatmap cells={demoData} loading={demoLoading} color={BRAND}    metric="impressions" title="Eksponeringer" />
+            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#0A4FA8"  metric="completions"  title="Videogennemførelse" />
           </div>
         </div>
       </main>
