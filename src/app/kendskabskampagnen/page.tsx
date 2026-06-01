@@ -276,7 +276,12 @@ export default function KendskabskampagnenPage() {
       cpm:                 0,
     }
   }, { ...empty })
-  totals.frequency      = totals.reach > 0 ? totals.impressions / totals.reach : 0
+  // Frekvens-tæller: YouTube bruger coviewedImpressions (samsening), øvrige bruger impressions
+  const totalImpressionsForFreq =
+    apiData['meta'].impressions +
+    apiData['youtube'].coviewedImpressions +
+    apiData['tv2play'].impressions
+  totals.frequency = totals.reach > 0 ? totalImpressionsForFreq / totals.reach : 0
   totals.completionRate = totals.impressions > 0 ? totals.videoViews100 / totals.impressions : 0
   totals.cpm            = totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0
 
