@@ -1,11 +1,8 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import type { DeviceStat } from '@/lib/api/awareness'
 
-function hexToRgb(hex: string): [number, number, number] {
-  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]
-}
-
-const OPACITIES = [1, 0.70, 0.44, 0.24, 0.14]
+// Distinct colors per slice position — same palette regardless of brand color
+const SLICE_COLORS = ['#4E79A7', '#F28E2B', '#E15759', '#76B7B2', '#59A14F']
 
 const CX = 75, CY = 75, R = 52, SW = 24
 const C  = 2 * Math.PI * R
@@ -16,15 +13,14 @@ interface Props {
   color?:   string
 }
 
-export function DevicePieChart({ stats, loading, color = '#4472CA' }: Props) {
-  const [r, g, b] = hexToRgb(color)
+export function DevicePieChart({ stats, loading }: Props) {
   const total = stats.reduce((s, d) => s + d.impressions, 0)
 
   const segs = stats.map((stat, i) => ({
     device:      stat.device,
     impressions: stat.impressions,
     pct:         total > 0 ? stat.impressions / total : 0,
-    fill:        `rgba(${r},${g},${b},${OPACITIES[i] ?? 0.12})`,
+    fill:        SLICE_COLORS[i % SLICE_COLORS.length],
   }))
 
   let cumDeg = -90

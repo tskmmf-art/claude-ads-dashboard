@@ -8,7 +8,6 @@ import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CampaignGantt } from '@/components/CampaignGantt'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
-import { DeviceStats } from '@/components/DeviceStats'
 import { DevicePieChart } from '@/components/DevicePieChart'
 import { VideoFunnel } from '@/components/VideoFunnel'
 import { useDemographics } from '@/hooks/useDemographics'
@@ -146,11 +145,6 @@ export default function YouTubePage() {
               <DevicePieChart stats={deviceData} loading={deviceLoading} color={BRAND} />
             </div>
           </div>
-        </div>
-
-        <div>
-          <SectionHead>Enheder — YouTube</SectionHead>
-          <DeviceStats stats={deviceData} loading={deviceLoading} color={BRAND} />
         </div>
 
         <div>
