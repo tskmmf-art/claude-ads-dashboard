@@ -104,6 +104,7 @@ function Stat({ label, value, sub, loading, accent = '#D80070' }: {
   )
 }
 
+
 function SectionHeader({ title, description }: { title: string; description?: string }) {
   return (
     <div className="mb-3">
@@ -446,8 +447,8 @@ export default function KendskabskampagnenPage() {
 
           {/* Summary cards */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Eksponeringer" value={formatNumber(totals.impressions)}                          loading={isLoading} accent="#D80070" />
             <Stat label="Reach"         value={totals.reach > 0 ? formatNumber(totals.reach) : '—'}      loading={isLoading} accent="#D80070" />
+            <Stat label="Eksponeringer" value={formatNumber(totals.impressions)}                          loading={isLoading} accent="#D80070" />
             <Stat label="Frekvens"      value={totals.frequency > 0 ? totals.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
             <Stat label="CPM"           value={formatCurrency(totals.cpm)}                                loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
           </div>

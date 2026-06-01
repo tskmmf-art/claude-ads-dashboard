@@ -1,18 +1,98 @@
+'use client'
+
+import * as React from 'react'
+import { useAccounts } from '@/hooks/useAdsData'
+import { useAwareness } from '@/hooks/useAwarenessData'
+import { DateRangePicker } from '@/components/filters/DateRangePicker'
+import { AccountSelector } from '@/components/filters/AccountSelector'
+import { Skeleton } from '@/components/ui/skeleton'
+import { KAMPAGNE_PERIODE, KANALER } from '@/lib/config/kendskabs'
+import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
+import type { DateRange } from '@/types'
+
+const KAMPAGNE_RANGE: DateRange = { from: KAMPAGNE_PERIODE.start, to: KAMPAGNE_PERIODE.end }
+const youtubeKanal = KANALER.find(k => k.id === 'youtube')!
+
+function Stat({ label, value, sub, loading, accent = '#D80070' }: {
+  label: string; value: string; sub?: string; loading?: boolean; accent?: string
+}) {
+  return (
+    <div
+      className="rounded-xl bg-white p-5 shadow-sm border border-border overflow-hidden relative"
+      style={{ borderLeft: `4px solid ${accent}` }}
+    >
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+      {loading
+        ? <Skeleton className="mt-2 h-8 w-28" />
+        : <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">{value}</p>
+      }
+      {sub && !loading && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
+    </div>
+  )
+}
+
 export default function YouTubePage() {
+  const [dateRange, setDateRange] = React.useState<DateRange>(KAMPAGNE_RANGE)
+  const [accountId, setAccountId] = React.useState<string | null>(null)
+
+  // Manuel reach gemt i localStorage (deles med hovedsiden)
+  const [manualReach, setManualReach] = React.useState<number>(() => {
+    if (typeof window === 'undefined') return youtubeKanal.manualReach ?? 0
+    try {
+      const stored = JSON.parse(localStorage.getItem('kendskab_manual_reaches') ?? '{}')
+      return stored['youtube'] ?? youtubeKanal.manualReach ?? 0
+    } catch { return youtubeKanal.manualReach ?? 0 }
+  })
+
+  const accounts = useAccounts('google', true)
+  React.useEffect(() => {
+    if (accounts.accounts.length > 0 && !accountId)
+      setAccountId(accounts.accounts[0].id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts.accounts])
+
+  const { data, isLoading } = useAwareness('google', accountId, dateRange, true)
+
+  // YouTube: coviewedImpressions bruges som eksp.-tæller; reach er manuelt
+  const reach       = manualReach > 0 ? manualReach : data.reach
+  const impressions = data.coviewedImpressions
+  const frequency   = reach > 0 ? impressions / reach : data.frequency
+  const cpm         = data.cpm
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-white px-6 py-4 shadow-sm">
         <div className="mx-auto max-w-screen-2xl">
-          <h1 className="text-base font-bold flex items-center gap-2">
-            <span className="inline-block h-4 w-1 rounded-none bg-mmf-red" />
-            Kendskabskampagnen — YouTube
-          </h1>
+          <div className="flex flex-wrap items-center gap-4">
+            <h1 className="text-base font-bold flex items-center gap-2">
+              <span className="inline-block h-4 w-1 rounded-none bg-mmf-red" />
+              Kendskabskampagnen — YouTube
+            </h1>
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+              <AccountSelector
+                platform="google"
+                accounts={accounts.accounts}
+                selectedId={accountId}
+                isLoading={accounts.isLoading}
+                error={accounts.error}
+                onChange={setAccountId}
+              />
+            </div>
+            <DateRangePicker dateRange={dateRange} onChange={setDateRange} />
+          </div>
         </div>
       </header>
+
       <main className="mx-auto max-w-screen-2xl p-6">
-        <div className="rounded-xl border bg-white p-8 shadow-sm text-center text-muted-foreground text-sm">
-          YouTube dashboard — kommer snart
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Eksponeringer" value={impressions > 0 ? formatNumber(impressions) : '—'}  loading={isLoading} accent="#D80070" />
+          <Stat label="Reach"         value={reach > 0 ? formatNumber(reach) : '—'}              loading={isLoading} accent="#D80070" />
+          <Stat label="Frekvens"      value={frequency > 0 ? frequency.toFixed(2) : '—'}         loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
+          <Stat label="CPM"           value={formatCurrency(cpm)}                                 loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          * Eksponeringer = coviewed impressions · Reach opdateres manuelt på hovedsiden
+        </p>
       </main>
     </div>
   )
