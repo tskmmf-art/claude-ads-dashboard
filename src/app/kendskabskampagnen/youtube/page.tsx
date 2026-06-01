@@ -130,7 +130,7 @@ export default function YouTubePage() {
             <div className="col-span-3">
               <VideoFunnel
                 data={{
-                  impressions:    data.impressions,
+                  impressions:    data.coviewedImpressions,
                   videoViews25:   data.videoViews25,
                   videoViews50:   data.videoViews50,
                   videoViews75:   data.videoViews75,
