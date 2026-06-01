@@ -114,7 +114,10 @@ export default function YouTubePage() {
             <span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />
             Køn og alder — YouTube
           </h2>
-          <DemographicHeatmap cells={demoData} loading={demoLoading} color="#DC2626" />
+          <div className="grid grid-cols-2 gap-4">
+            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#DC2626" metric="impressions" title="Eksponeringer" />
+            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#D80070" metric="completions"  title="Videogennemførelse" />
+          </div>
         </div>
       </main>
     </div>

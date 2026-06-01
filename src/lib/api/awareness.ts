@@ -24,6 +24,7 @@ export interface DemoCell {
   age:         string            // '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+'
   gender:      'male' | 'female'
   impressions: number
+  completions: number            // video 100% gennemførelser
 }
 
 export interface AwarenessData {
@@ -233,7 +234,7 @@ export async function fetchMetaDemographics(
   until: string
 ): Promise<DemoCell[]> {
   const params = new URLSearchParams({
-    fields:      'impressions',
+    fields:      'impressions,video_p100_watched_actions',
     breakdowns:  'age,gender',
     time_range:  JSON.stringify({ since, until }),
     level:       'account',
@@ -248,10 +249,13 @@ export async function fetchMetaDemographics(
   for (const row of (json.data ?? [])) {
     if (row.gender === 'unknown') continue
     if (!ALLOWED_AGES.has(row.age)) continue
+    const v100 = (row.video_p100_watched_actions as Array<{ action_type: string; value: string }> ?? [])
+      .find(a => a.action_type === 'video_view')?.value
     cells.push({
       age:         row.age,
       gender:      row.gender as 'male' | 'female',
       impressions: parseInt(row.impressions) || 0,
+      completions: parseInt(v100 ?? '0') || 0,
     })
   }
   return cells
@@ -285,7 +289,8 @@ export async function fetchGoogleDemographics(
   const ageQuery = `
     SELECT
       ad_group_criterion.age_range.type,
-      metrics.impressions
+      metrics.impressions,
+      metrics.video_views
     FROM age_range_view
     WHERE segments.date BETWEEN '${since}' AND '${until}'
       AND campaign.status != 'REMOVED'
@@ -294,7 +299,8 @@ export async function fetchGoogleDemographics(
   const genderQuery = `
     SELECT
       ad_group_criterion.gender.type,
-      metrics.impressions
+      metrics.impressions,
+      metrics.video_views
     FROM gender_view
     WHERE segments.date BETWEEN '${since}' AND '${until}'
       AND campaign.status != 'REMOVED'
@@ -321,36 +327,45 @@ export async function fetchGoogleDemographics(
 
   const [ageJson, genderJson] = await Promise.all([ageRes.json(), genderRes.json()])
 
-  // Sum impressions by age group
-  const ageImps: Record<string, number> = {}
+  // Sum impressions + video_views by age group
+  const ageImps:  Record<string, number> = {}
+  const ageViews: Record<string, number> = {}
   for (const r of (ageJson.results ?? [])) {
     const age = GOOGLE_AGE_MAP[r.adGroupCriterion?.ageRange?.type]
     if (!age) continue
-    ageImps[age] = (ageImps[age] ?? 0) + (parseInt(r.metrics?.impressions ?? '0') || 0)
+    ageImps[age]  = (ageImps[age]  ?? 0) + (parseInt(r.metrics?.impressions ?? '0') || 0)
+    ageViews[age] = (ageViews[age] ?? 0) + (parseInt(r.metrics?.videoViews  ?? '0') || 0)
   }
 
-  // Sum impressions by gender
-  const genderImps: Record<string, number> = {}
+  // Sum impressions + video_views by gender
+  const genderImps:  Record<string, number> = {}
+  const genderViews: Record<string, number> = {}
   for (const r of (genderJson.results ?? [])) {
     const gender = GOOGLE_GENDER_MAP[r.adGroupCriterion?.gender?.type]
     if (!gender) continue
-    genderImps[gender] = (genderImps[gender] ?? 0) + (parseInt(r.metrics?.impressions ?? '0') || 0)
+    genderImps[gender]  = (genderImps[gender]  ?? 0) + (parseInt(r.metrics?.impressions ?? '0') || 0)
+    genderViews[gender] = (genderViews[gender] ?? 0) + (parseInt(r.metrics?.videoViews  ?? '0') || 0)
   }
 
-  const totalAge    = Object.values(ageImps).reduce((s, v) => s + v, 0)
-  const totalGender = Object.values(genderImps).reduce((s, v) => s + v, 0)
+  const totalAgeImps    = Object.values(ageImps).reduce((s, v) => s + v, 0)
+  const totalGenderImps = Object.values(genderImps).reduce((s, v) => s + v, 0)
+  const totalAgeViews   = Object.values(ageViews).reduce((s, v) => s + v, 0)
+  const totalGenderViews = Object.values(genderViews).reduce((s, v) => s + v, 0)
 
-  // Estimate 2D distribution: age_share × gender_share × avg(totalAge, totalGender)
-  const total = (totalAge + totalGender) / 2
+  const totalImps  = (totalAgeImps   + totalGenderImps)  / 2
+  const totalViews = (totalAgeViews  + totalGenderViews) / 2
+
   const cells: DemoCell[] = []
-
   for (const age of Object.keys(ageImps)) {
     for (const gender of Object.keys(genderImps) as ('male' | 'female')[]) {
-      const ageShare    = totalAge    > 0 ? ageImps[age]       / totalAge    : 0
-      const genderShare = totalGender > 0 ? genderImps[gender] / totalGender : 0
-      const impressions = Math.round(ageShare * genderShare * total)
+      const ageImpShare    = totalAgeImps    > 0 ? ageImps[age]    / totalAgeImps    : 0
+      const genderImpShare = totalGenderImps > 0 ? genderImps[gender] / totalGenderImps : 0
+      const ageViewShare   = totalAgeViews   > 0 ? ageViews[age]   / totalAgeViews   : 0
+      const genderViewShare = totalGenderViews > 0 ? genderViews[gender] / totalGenderViews : 0
+      const impressions = Math.round(ageImpShare  * genderImpShare  * totalImps)
+      const completions = Math.round(ageViewShare * genderViewShare * totalViews)
       if (impressions > 0)
-        cells.push({ age, gender, impressions })
+        cells.push({ age, gender, impressions, completions })
     }
   }
 
