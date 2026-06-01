@@ -33,19 +33,16 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
   return (
     <div className="rounded-xl border bg-white shadow-sm p-6">
       {/* Chart area */}
-      <div className="flex items-end justify-center gap-6" style={{ height: BAR_MAX_PX + 40 }}>
+      <div className="flex items-end justify-around gap-4" style={{ height: BAR_MAX_PX + 40 }}>
         {stages.map(({ label, value }) => {
           const ratio = value / max
           const barH  = Math.max(Math.round(ratio * BAR_MAX_PX), 6)
 
           return (
-            <div key={label} className="flex flex-col items-center gap-1.5" style={{ width: 44 }}>
-              {/* Value above bar */}
+            <div key={label} className="flex flex-col items-center gap-1.5 flex-1">
               <span className="text-xs font-semibold tabular-nums text-foreground text-center leading-tight">
                 {loading ? '' : formatNumber(value)}
               </span>
-
-              {/* Bar */}
               <div
                 className="w-full rounded-t-lg"
                 style={{
@@ -62,15 +59,15 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
       </div>
 
       {/* X-axis labels */}
-      <div className="flex justify-center gap-6 mt-2">
+      <div className="flex justify-around gap-4 mt-2">
         {stages.map(({ label, value }) => {
-          const pctOfImp = imp > 0 ? value / imp : null
+          const pct = imp > 0 ? value / imp : null
           return (
-            <div key={label} className="flex flex-col items-center gap-0.5" style={{ width: 44 }}>
+            <div key={label} className="flex-1 flex flex-col items-center gap-0.5">
               <span className="text-xs text-muted-foreground text-center leading-tight">{label}</span>
-              {pctOfImp !== null && !loading && (
+              {pct !== null && !loading && (
                 <span className="text-xs font-semibold" style={{ color }}>
-                  {formatPercent(pctOfImp)}
+                  {formatPercent(pct)}
                 </span>
               )}
             </div>
