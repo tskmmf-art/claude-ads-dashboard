@@ -74,7 +74,7 @@ function ReachCell({ kanalId, value, onSave }: {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const empty: AwarenessData = {
-  spend: 0, impressions: 0, reach: 0, frequency: 0,
+  spend: 0, impressions: 0, coviewedImpressions: 0, reach: 0, frequency: 0,
   linkClicks: 0,
   videoViews25: 0, videoViews50: 0, videoViews75: 0, videoViews100: 0,
   completionRate: 0, cpm: 0,
@@ -231,17 +231,18 @@ export default function KendskabskampagnenPage() {
   const totals: AwarenessData = KANALER.reduce((acc, k) => {
     const d = apiData[k.id]
     return {
-      spend:          acc.spend          + d.spend,
-      impressions:    acc.impressions    + d.impressions,
-      reach:          acc.reach          + d.reach,
-      frequency:      0,
-      linkClicks:     acc.linkClicks     + d.linkClicks,
-      videoViews25:   acc.videoViews25   + d.videoViews25,
-      videoViews50:   acc.videoViews50   + d.videoViews50,
-      videoViews75:   acc.videoViews75   + d.videoViews75,
-      videoViews100:  acc.videoViews100  + d.videoViews100,
-      completionRate: 0,
-      cpm:            0,
+      spend:               acc.spend               + d.spend,
+      impressions:         acc.impressions         + d.impressions,
+      coviewedImpressions: acc.coviewedImpressions + d.coviewedImpressions,
+      reach:               acc.reach               + d.reach,
+      frequency:           0,
+      linkClicks:          acc.linkClicks          + d.linkClicks,
+      videoViews25:        acc.videoViews25        + d.videoViews25,
+      videoViews50:        acc.videoViews50        + d.videoViews50,
+      videoViews75:        acc.videoViews75        + d.videoViews75,
+      videoViews100:       acc.videoViews100       + d.videoViews100,
+      completionRate:      0,
+      cpm:                 0,
     }
   }, { ...empty })
   totals.frequency      = totals.reach > 0 ? totals.impressions / totals.reach : 0
@@ -421,6 +422,7 @@ export default function KendskabskampagnenPage() {
                   <TH>Kanal</TH>
                   <TH right>Reach</TH>
                   <TH right>Eksponeringer</TH>
+                  <TH right>Eksp. (samsening)</TH>
                   <TH right>Frekvens</TH>
                   <TH right>Klik på link</TH>
                   <TH right>Visn. 25%</TH>
@@ -446,6 +448,7 @@ export default function KendskabskampagnenPage() {
                           : d.reach > 0 ? formatNumber(d.reach) : dash}
                       </TD>
                       <TD right>{loading ? sk() : noApi ? dash : formatNumber(d.impressions)}</TD>
+                      <TD right>{loading ? sk() : noApi ? dash : d.coviewedImpressions > 0 ? formatNumber(d.coviewedImpressions) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.frequency > 0 ? d.frequency.toFixed(2) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
                       <TD right>{loading ? sk() : noApi ? dash : d.videoViews25  > 0 ? formatNumber(d.videoViews25)  : dash}</TD>
@@ -462,6 +465,7 @@ export default function KendskabskampagnenPage() {
                   <TD bold>Total</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.reach > 0 ? formatNumber(totals.reach) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.impressions)}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.coviewedImpressions > 0 ? formatNumber(totals.coviewedImpressions) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.frequency > 0 ? totals.frequency.toFixed(2) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.linkClicks > 0 ? formatNumber(totals.linkClicks) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews25  > 0 ? formatNumber(totals.videoViews25)  : dash}</TD>

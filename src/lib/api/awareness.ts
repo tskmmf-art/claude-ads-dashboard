@@ -21,17 +21,18 @@ function liHeaders() {
 }
 
 export interface AwarenessData {
-  spend:          number
-  impressions:    number
-  reach:          number
-  frequency:      number   // impressions / reach
-  linkClicks:     number
-  videoViews25:   number
-  videoViews50:   number
-  videoViews75:   number
-  videoViews100:  number
-  completionRate: number   // videoViews100 / impressions
-  cpm:            number   // spend / impressions * 1000
+  spend:               number
+  impressions:         number
+  coviewedImpressions: number   // Google Ads: metrics.coviewed_impressions (samsening)
+  reach:               number
+  frequency:           number   // impressions / reach
+  linkClicks:          number
+  videoViews25:        number
+  videoViews50:        number
+  videoViews75:        number
+  videoViews100:       number
+  completionRate:      number   // videoViews100 / impressions
+  cpm:                 number   // spend / impressions * 1000
 }
 
 // ── Meta ─────────────────────────────────────────────────────────────────────
@@ -90,6 +91,7 @@ export async function fetchMetaAwareness(
   return {
     spend,
     impressions,
+    coviewedImpressions: 0,
     reach,
     frequency:      reach > 0 ? impressions / reach : 0,
     linkClicks,
@@ -145,6 +147,7 @@ export async function fetchGoogleAwareness(
     SELECT
       metrics.cost_micros,
       metrics.impressions,
+      metrics.coviewed_impressions,
       metrics.clicks,
       metrics.video_views,
       metrics.video_quartile_p25_rate,
@@ -171,6 +174,7 @@ export async function fetchGoogleAwareness(
     metrics: {
       costMicros?: string
       impressions?: string
+      coviewedImpressions?: string
       clicks?: string
       videoViews?: string
       videoQuartileP25Rate?: number
@@ -180,15 +184,16 @@ export async function fetchGoogleAwareness(
     }
   }> = json.results ?? []
 
-  let spend = 0, impressions = 0, clicks = 0
+  let spend = 0, impressions = 0, coviewedImpressions = 0, clicks = 0
   let v25 = 0, v50 = 0, v75 = 0, v100 = 0
 
   for (const row of rows) {
     const m = row.metrics
     const imp = parseInt(m.impressions ?? '0') || 0
-    spend       += (parseInt(m.costMicros ?? '0') || 0) / 1_000_000
-    impressions += imp
-    clicks      += parseInt(m.clicks ?? '0') || 0
+    spend               += (parseInt(m.costMicros ?? '0') || 0) / 1_000_000
+    impressions         += imp
+    coviewedImpressions += parseInt(m.coviewedImpressions ?? '0') || 0
+    clicks              += parseInt(m.clicks ?? '0') || 0
     // quartile rates are fractions (0–1) × impressions = views at that threshold
     v25  += Math.round((m.videoQuartileP25Rate  ?? 0) * imp)
     v50  += Math.round((m.videoQuartileP50Rate  ?? 0) * imp)
@@ -199,6 +204,7 @@ export async function fetchGoogleAwareness(
   return {
     spend,
     impressions,
+    coviewedImpressions,
     reach:          0,   // ikke tilgængeligt pr. kampagne i standard Google Ads
     frequency:      0,
     linkClicks:     clicks,
@@ -260,6 +266,7 @@ export async function fetchLinkedInAwareness(
   return {
     spend,
     impressions,
+    coviewedImpressions: 0,
     reach,
     frequency:      reach > 0 ? impressions / reach : 0,
     linkClicks:     0,   // ikke tilgængeligt fra LinkedIn awareness API
