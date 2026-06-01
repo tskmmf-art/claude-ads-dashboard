@@ -192,13 +192,17 @@ export default function KendskabskampagnenPage() {
   const [performanceRevealed, setPerformanceRevealed] = React.useState(false)
 
   // Anvend manualReach på kanaler der har det sat — overskriver API-reach og genberegner frekvens
+  // For Google/YouTube bruges coviewedImpressions (samsening) som tæller i frekvensberegningen
   function applyManualReach(base: AwarenessData, kanal: KanalConfig): AwarenessData {
     const manual = getReach(kanal)
     const reach  = manual > 0 ? manual : base.reach
+    const impressionsForFreq = kanal.platform === 'google'
+      ? base.coviewedImpressions
+      : base.impressions
     return {
       ...base,
       reach,
-      frequency: reach > 0 ? base.impressions / reach : base.frequency,
+      frequency: reach > 0 ? impressionsForFreq / reach : base.frequency,
     }
   }
 
