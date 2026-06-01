@@ -33,7 +33,7 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
   return (
     <div className="rounded-xl border bg-white shadow-sm p-6">
       {/* Chart area */}
-      <div className="flex items-end justify-center gap-14" style={{ height: BAR_MAX_PX + 40 }}>
+      <div className="flex items-end justify-center gap-6" style={{ height: BAR_MAX_PX + 40 }}>
         {stages.map(({ label, value }) => {
           const ratio = value / max
           const barH  = Math.max(Math.round(ratio * BAR_MAX_PX), 6)
@@ -62,7 +62,7 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
       </div>
 
       {/* X-axis labels */}
-      <div className="flex justify-center gap-14 mt-2">
+      <div className="flex justify-center gap-6 mt-2">
         {stages.map(({ label, value }) => {
           const pctOfImp = imp > 0 ? value / imp : null
           return (

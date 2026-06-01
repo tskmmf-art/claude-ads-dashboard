@@ -4,7 +4,7 @@ import type { DeviceStat } from '@/lib/api/awareness'
 // Distinct colors per slice position — same palette regardless of brand color
 const SLICE_COLORS = ['#4E79A7', '#F28E2B', '#E15759', '#76B7B2', '#59A14F']
 
-const CX = 75, CY = 75, R = 52, SW = 24
+const CX = 95, CY = 95, R = 72, SW = 28
 const C  = 2 * Math.PI * R
 
 interface Props {
@@ -33,7 +33,7 @@ export function DevicePieChart({ stats, loading }: Props) {
         <p className="text-xs text-muted-foreground text-center">Ingen data</p>
       ) : (
         <>
-          <svg width={CX * 2} height={CY * 2} viewBox={`0 0 ${CX * 2} ${CY * 2}`}>
+          <svg width="100%" viewBox={`0 0 ${CX * 2} ${CY * 2}`}>
             {/* Track */}
             <circle cx={CX} cy={CY} r={R} fill="none" stroke="#f3f4f6" strokeWidth={SW} />
 
