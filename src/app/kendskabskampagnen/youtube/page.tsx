@@ -89,12 +89,12 @@ export default function YouTubePage() {
 
       <main className="mx-auto max-w-screen-2xl space-y-6 p-6">
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground mb-3">Kampagneplan for YouTube</h2>
+          <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2"><span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />Kampagneplan for YouTube</h2>
           <CampaignGantt phases={YOUTUBE_PHASES} />
         </div>
 
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground mb-3">Resultater for YouTube</h2>
+          <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2"><span className="inline-block h-5 w-1 rounded-none bg-mmf-red" />Resultater for YouTube</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Eksponeringer" value={impressions > 0 ? formatNumber(impressions) : '—'}  loading={isLoading} accent="#D80070" />
           <Stat label="Reach"         value={reach > 0 ? formatNumber(reach) : '—'}              loading={isLoading} accent="#D80070" />
