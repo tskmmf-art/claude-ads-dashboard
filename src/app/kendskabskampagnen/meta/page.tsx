@@ -112,8 +112,8 @@ export default function MetaPage() {
 
         <div>
           <SectionHead>Videovisninger — Meta</SectionHead>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="col-span-3">
+          <div className="grid gap-4" style={{ gridTemplateColumns: '65% 35%' }}>
+            <div>
               <VideoFunnel
                 data={{
                   impressions:    data.impressions,
@@ -127,7 +127,7 @@ export default function MetaPage() {
                 color={BRAND}
               />
             </div>
-            <div className="col-span-1">
+            <div>
               <DevicePieChart stats={deviceData} loading={deviceLoading} color={BRAND} />
             </div>
           </div>
