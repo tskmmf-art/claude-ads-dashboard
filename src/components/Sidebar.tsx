@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { BarChart2, Megaphone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
+const NAV = [
   {
     href: '/',
     label: 'Overall Performance',
@@ -15,6 +15,11 @@ const NAV_ITEMS = [
     href: '/kendskabskampagnen',
     label: 'Kendskabskampagnen',
     icon: Megaphone,
+    children: [
+      { href: '/kendskabskampagnen/tv2play',  label: '— TV2 Play' },
+      { href: '/kendskabskampagnen/meta',     label: '— Meta' },
+      { href: '/kendskabskampagnen/youtube',  label: '— YouTube' },
+    ],
   },
 ]
 
@@ -34,22 +39,50 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 space-y-0.5 p-3 pt-4">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href
+        {NAV.map(({ href, label, icon: Icon, children }) => {
+          const active    = pathname === href
+          const childActive = children?.some(c => pathname === c.href)
+
           return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all rounded-sm',
-                active
-                  ? 'bg-mmf-red text-white'
-                  : 'text-white/50 hover:bg-white/8 hover:text-white/90'
+            <div key={href}>
+              <Link
+                href={href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all rounded-sm',
+                  active
+                    ? 'bg-mmf-red text-white'
+                    : childActive
+                      ? 'text-white/90'
+                      : 'text-white/50 hover:bg-white/8 hover:text-white/90'
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="leading-tight">{label}</span>
+              </Link>
+
+              {/* Sub-items — always visible when parent exists */}
+              {children && (
+                <div className="mt-0.5 space-y-0.5 pl-4">
+                  {children.map(child => {
+                    const childIsActive = pathname === child.href
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={cn(
+                          'flex items-center px-3 py-2 text-xs font-medium transition-all rounded-sm',
+                          childIsActive
+                            ? 'bg-mmf-red text-white'
+                            : 'text-white/40 hover:bg-white/8 hover:text-white/80'
+                        )}
+                      >
+                        {child.label}
+                      </Link>
+                    )
+                  })}
+                </div>
               )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="leading-tight">{label}</span>
-            </Link>
+            </div>
           )
         })}
       </nav>
