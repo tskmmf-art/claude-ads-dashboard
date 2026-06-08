@@ -4,11 +4,14 @@ import useSWR from 'swr'
 import type { AdAccount, AdMetrics, DateRange, Platform } from '@/types'
 import { formatDate } from '@/lib/utils/formatters'
 
-const fetcher = (url: string) =>
-  fetch(url).then((r) => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`)
-    return r.json()
-  })
+const fetcher = async (url: string) => {
+  const r = await fetch(url)
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}))
+    throw new Error(body.error ?? `HTTP ${r.status}`)
+  }
+  return r.json()
+}
 
 export function useAccounts(platform: Platform, enabled: boolean) {
   const { data, error, isLoading } = useSWR<{ data: AdAccount[] }>(
