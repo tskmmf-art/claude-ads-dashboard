@@ -469,6 +469,7 @@ export default function KendskabskampagnenPage() {
                   <TH right>Visn. 100%</TH>
                   <TH right>Fuldførelse%</TH>
                   <TH right>CPM</TH>
+                  <TH right>CTR</TH>
                 </tr>
               </thead>
               <tbody>
@@ -515,6 +516,13 @@ export default function KendskabskampagnenPage() {
                           ? <ManualCell value={tv2Data.cpm} onSave={v => saveTv2Field('cpm', v)} display={formatCurrency} />
                           : formatCurrency(d.cpm)}
                       </TD>
+                      {/* CTR */}
+                      <TD right>
+                        {loading ? sk() : isTv2 ? dash : (() => {
+                          const imp = k.platform === 'google' ? d.coviewedImpressions : d.impressions
+                          return imp > 0 && d.linkClicks > 0 ? formatPercent(d.linkClicks / imp) : dash
+                        })()}
+                      </TD>
                     </tr>
                   )
                 })}
@@ -531,6 +539,7 @@ export default function KendskabskampagnenPage() {
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews100 > 0 ? formatNumber(totals.videoViews100) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.videoViews100 > 0 ? formatPercent(totals.completionRate) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatCurrency(totals.cpm)}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totalImpressionsDisplay > 0 && totals.linkClicks > 0 ? formatPercent(totals.linkClicks / totalImpressionsDisplay) : dash}</TD>
                 </tr>
               </tbody>
             </table>
