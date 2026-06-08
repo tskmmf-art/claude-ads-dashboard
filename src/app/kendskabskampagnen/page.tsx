@@ -277,14 +277,14 @@ export default function KendskabskampagnenPage() {
       cpm:                 0,
     }
   }, { ...empty })
-  // Frekvens-tæller: YouTube bruger coviewedImpressions (samsening), øvrige bruger impressions
-  const totalImpressionsForFreq =
+  // YouTube bruger coviewedImpressions (samsening) som eksponeringer, øvrige bruger impressions
+  const totalImpressionsDisplay =
     apiData['meta'].impressions +
     apiData['youtube'].coviewedImpressions +
     apiData['tv2play'].impressions
-  totals.frequency = totals.reach > 0 ? totalImpressionsForFreq / totals.reach : 0
-  totals.completionRate = totals.impressions > 0 ? totals.videoViews100 / totals.impressions : 0
-  totals.cpm            = totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0
+  totals.frequency      = totals.reach > 0 ? totalImpressionsDisplay / totals.reach : 0
+  totals.completionRate = totalImpressionsDisplay > 0 ? totals.videoViews100 / totalImpressionsDisplay : 0
+  totals.cpm            = totalImpressionsDisplay > 0 ? (totals.spend / totalImpressionsDisplay) * 1000 : 0
 
   const dash = <span className="text-muted-foreground/50">—</span>
 
@@ -448,7 +448,7 @@ export default function KendskabskampagnenPage() {
           {/* Summary cards */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Reach"         value={totals.reach > 0 ? formatNumber(totals.reach) : '—'}      loading={isLoading} accent="#D80070" />
-            <Stat label="Eksponeringer" value={formatNumber(totals.impressions)}                          loading={isLoading} accent="#D80070" />
+            <Stat label="Eksponeringer" value={formatNumber(totalImpressionsDisplay)}                     loading={isLoading} accent="#D80070" />
             <Stat label="Frekvens"      value={totals.frequency > 0 ? totals.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
             <Stat label="CPM"           value={formatCurrency(totals.cpm)}                                loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
           </div>
@@ -522,7 +522,7 @@ export default function KendskabskampagnenPage() {
                 <tr className="bg-muted/30">
                   <TD bold>Total</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.reach > 0 ? formatNumber(totals.reach) : dash}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totals.impressions - apiData['youtube'].impressions + apiData['youtube'].coviewedImpressions)}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totalImpressionsDisplay)}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.frequency > 0 ? totals.frequency.toFixed(2) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.linkClicks > 0 ? formatNumber(totals.linkClicks) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews25  > 0 ? formatNumber(totals.videoViews25)  : dash}</TD>
