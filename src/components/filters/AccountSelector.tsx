@@ -15,7 +15,7 @@ interface Props {
 
 export function AccountSelector({ platform, accounts, selectedId, isLoading, error, onChange }: Props) {
   if (isLoading) return <Skeleton className="h-9 w-44" />
-  if (error) return <span className="text-xs text-destructive">Failed to load {platform} accounts</span>
+  if (error) return <span className="text-xs text-destructive" title={error.message}>Failed to load {platform} accounts: {error.message}</span>
   if (accounts.length === 0) return null
 
   return (
