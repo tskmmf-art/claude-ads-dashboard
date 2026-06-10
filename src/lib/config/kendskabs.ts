@@ -25,6 +25,13 @@ export const KANALER: KanalConfig[] = [
   { id: 'tv2play', name: 'TV2 Play Ads', budget: 60_000, platform: null     },
 ]
 
+export const TV2_DEVICE_STATS = [
+  { device: 'TV',      impressions: 145_418 },
+  { device: 'Desktop', impressions:   6_369 },
+  { device: 'Tablet',  impressions:   7_117 },
+  { device: 'Mobile',  impressions:   3_625 },
+]
+
 // Hjælpefunktioner ─────────────────────────────────────────────────────────
 
 /** Antal resterende måneder i kampagneperioden fra i dag */

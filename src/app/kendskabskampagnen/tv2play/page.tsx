@@ -4,6 +4,7 @@ import * as React from 'react'
 import { CampaignGantt } from '@/components/CampaignGantt'
 import { VideoFunnel } from '@/components/VideoFunnel'
 import { DevicePieChart } from '@/components/DevicePieChart'
+import { TV2_DEVICE_STATS } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 
 const BRAND = '#E40012'
@@ -16,12 +17,6 @@ const TV2_PHASES = [
 
 const TV2_DEFAULTS = { impressions: 140883, reach: 69639, cpm: 269.86, completionRate: 0.9763 }
 
-export const TV2_DEVICE_STATS = [
-  { device: 'TV',      impressions: 145_418 },
-  { device: 'Desktop', impressions:   6_369 },
-  { device: 'Tablet',  impressions:   7_117 },
-  { device: 'Mobile',  impressions:   3_625 },
-]
 
 function TV2Logo() {
   return (

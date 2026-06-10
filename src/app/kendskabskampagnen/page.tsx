@@ -13,10 +13,10 @@ import {
   remainingMonths,
   remainingBudget,
   totalRemainingBudget,
+  TV2_DEVICE_STATS,
   type KanalConfig,
 } from '@/lib/config/kendskabs'
 import type { AwarenessData, DemoCell, DeviceStat } from '@/lib/api/awareness'
-import { TV2_DEVICE_STATS } from './tv2play/page'
 import { VideoFunnel } from '@/components/VideoFunnel'
 import { DevicePieChart } from '@/components/DevicePieChart'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
