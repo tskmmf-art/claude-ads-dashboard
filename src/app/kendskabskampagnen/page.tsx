@@ -15,7 +15,12 @@ import {
   totalRemainingBudget,
   type KanalConfig,
 } from '@/lib/config/kendskabs'
-import type { AwarenessData } from '@/lib/api/awareness'
+import type { AwarenessData, DemoCell, DeviceStat } from '@/lib/api/awareness'
+import { VideoFunnel } from '@/components/VideoFunnel'
+import { DevicePieChart } from '@/components/DevicePieChart'
+import { DemographicHeatmap } from '@/components/DemographicHeatmap'
+import { useDemographics } from '@/hooks/useDemographics'
+import { useDeviceStats } from '@/hooks/useDeviceStats'
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils/formatters'
 import type { DateRange } from '@/types'
 
@@ -188,6 +193,11 @@ export default function KendskabskampagnenPage() {
   const metaAwareness   = useAwareness('meta',   metaAccountId,   dateRange, true)
   const googleAwareness = useAwareness('google', googleAccountId, dateRange, true)
 
+  const metaDemo   = useDemographics('meta',   metaAccountId,   dateRange, true)
+  const googleDemo = useDemographics('google', googleAccountId, dateRange, true)
+  const metaDevice   = useDeviceStats('meta',   metaAccountId,   dateRange, true)
+  const googleDevice = useDeviceStats('google', googleAccountId, dateRange, true)
+
   const isLoading = metaAwareness.isLoading || googleAwareness.isLoading
 
   const [performanceRevealed, setPerformanceRevealed] = React.useState(false)
@@ -285,6 +295,29 @@ export default function KendskabskampagnenPage() {
   totals.frequency      = totals.reach > 0 ? totalImpressionsDisplay / totals.reach : 0
   totals.completionRate = totalImpressionsDisplay > 0 ? totals.videoViews100 / totalImpressionsDisplay : 0
   totals.cpm            = totalImpressionsDisplay > 0 ? (totals.spend / totalImpressionsDisplay) * 1000 : 0
+
+  const mergedDeviceStats: DeviceStat[] = React.useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const s of [...metaDevice.data, ...googleDevice.data]) {
+      map[s.device] = (map[s.device] ?? 0) + s.impressions
+    }
+    return Object.entries(map)
+      .map(([device, impressions]) => ({ device, impressions }))
+      .sort((a, b) => b.impressions - a.impressions)
+  }, [metaDevice.data, googleDevice.data])
+
+  const mergedDemoData: DemoCell[] = React.useMemo(() => {
+    const map: Record<string, DemoCell> = {}
+    for (const c of [...metaDemo.data, ...googleDemo.data]) {
+      const key = `${c.gender}|${c.age}`
+      if (map[key]) {
+        map[key] = { ...map[key], impressions: map[key].impressions + c.impressions, completions: map[key].completions + c.completions }
+      } else {
+        map[key] = { ...c }
+      }
+    }
+    return Object.values(map)
+  }, [metaDemo.data, googleDemo.data])
 
   const dash = <span className="text-muted-foreground/50">—</span>
 
@@ -451,6 +484,60 @@ export default function KendskabskampagnenPage() {
             <Stat label="Eksponeringer" value={formatNumber(totalImpressionsDisplay)}                     loading={isLoading} accent="#D80070" />
             <Stat label="Frekvens"      value={totals.frequency > 0 ? totals.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
             <Stat label="CPM"           value={formatCurrency(totals.cpm)}                                loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
+          </div>
+
+          {/* Videovisninger */}
+          <div className="mb-4">
+            <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-foreground flex items-center gap-2">
+              <span className="inline-block h-3.5 w-1 rounded-none bg-mmf-red" />
+              Videovisninger — samlet
+            </h3>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="col-span-3">
+                <VideoFunnel
+                  data={{
+                    impressions:    totalImpressionsDisplay,
+                    videoViews25:   totals.videoViews25,
+                    videoViews50:   totals.videoViews50,
+                    videoViews75:   totals.videoViews75,
+                    videoViews100:  totals.videoViews100,
+                    completionRate: totals.completionRate,
+                  }}
+                  loading={isLoading}
+                  color="#D80070"
+                />
+              </div>
+              <div className="col-span-1">
+                <DevicePieChart
+                  stats={mergedDeviceStats}
+                  loading={metaDevice.isLoading || googleDevice.isLoading}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Køn og alder */}
+          <div className="mb-4">
+            <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-foreground flex items-center gap-2">
+              <span className="inline-block h-3.5 w-1 rounded-none bg-mmf-red" />
+              Køn og alder — samlet
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <DemographicHeatmap
+                cells={mergedDemoData}
+                loading={metaDemo.isLoading || googleDemo.isLoading}
+                color="#D80070"
+                metric="impressions"
+                title="Eksponeringer"
+              />
+              <DemographicHeatmap
+                cells={mergedDemoData}
+                loading={metaDemo.isLoading || googleDemo.isLoading}
+                color="#8B0040"
+                metric="completions"
+                title="Videogennemførelse"
+              />
+            </div>
           </div>
 
           {/* Performance table */}
