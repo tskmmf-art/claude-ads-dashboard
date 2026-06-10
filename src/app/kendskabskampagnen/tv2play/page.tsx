@@ -92,22 +92,22 @@ export default function TV2PlayPage() {
         </div>
 
         <div>
-          <SectionHead>Devicefordeling — TV2 Play</SectionHead>
-          <div className="max-w-xs">
-            <DevicePieChart stats={TV2_DEVICE_STATS} />
-          </div>
-        </div>
-
-        <div>
           <SectionHead>Videovisninger — TV2 Play</SectionHead>
-          <VideoFunnel
-            data={{
-              impressions:    tv2Data.impressions,
-              videoViews100:  Math.round(tv2Data.impressions * tv2Data.completionRate),
-              completionRate: tv2Data.completionRate,
-            }}
-            color={BRAND}
-          />
+          <div className="grid grid-cols-4 gap-4">
+            <div className="col-span-3">
+              <VideoFunnel
+                data={{
+                  impressions:    tv2Data.impressions,
+                  videoViews100:  Math.round(tv2Data.impressions * tv2Data.completionRate),
+                  completionRate: tv2Data.completionRate,
+                }}
+                color={BRAND}
+              />
+            </div>
+            <div className="col-span-1">
+              <DevicePieChart stats={TV2_DEVICE_STATS} />
+            </div>
+          </div>
         </div>
 
         <p className="text-xs text-muted-foreground">
