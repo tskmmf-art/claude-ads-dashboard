@@ -594,9 +594,15 @@ export default function KendskabskampagnenPage() {
                       {/* Klik på link */}
                       <TD right>{loading ? sk() : isTv2 ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
                       {/* Video-kvartiler */}
-                      <TD right>{loading ? sk() : isTv2 ? dash : d.videoViews25  > 0 ? formatNumber(d.videoViews25)  : dash}</TD>
-                      <TD right>{loading ? sk() : isTv2 ? dash : d.videoViews50  > 0 ? formatNumber(d.videoViews50)  : dash}</TD>
-                      <TD right>{loading ? sk() : isTv2 ? dash : d.videoViews75  > 0 ? formatNumber(d.videoViews75)  : dash}</TD>
+                      <TD right>{loading ? sk() : isTv2
+                        ? <span className="text-muted-foreground/50 tabular-nums">({formatNumber(d.videoViews100)})</span>
+                        : d.videoViews25 > 0 ? formatNumber(d.videoViews25) : dash}</TD>
+                      <TD right>{loading ? sk() : isTv2
+                        ? <span className="text-muted-foreground/50 tabular-nums">({formatNumber(d.videoViews100)})</span>
+                        : d.videoViews50 > 0 ? formatNumber(d.videoViews50) : dash}</TD>
+                      <TD right>{loading ? sk() : isTv2
+                        ? <span className="text-muted-foreground/50 tabular-nums">({formatNumber(d.videoViews100)})</span>
+                        : d.videoViews75 > 0 ? formatNumber(d.videoViews75) : dash}</TD>
                       <TD right>{loading ? sk() : d.videoViews100 > 0 ? formatNumber(d.videoViews100) : dash}</TD>
                       {/* Completion rate */}
                       <TD right>
