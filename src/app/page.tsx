@@ -140,7 +140,7 @@ export default function DashboardPage() {
         {/* Dual charts row */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <DualLineChart
-            title="Impressions & Reach"
+            title="Impressions & Rækkevidde"
             data={dailyMetrics}
             isLoading={isLoading}
             lines={[
@@ -153,7 +153,7 @@ export default function DashboardPage() {
               },
               {
                 key: 'reach',
-                label: 'Reach',
+                label: 'Rækkevidde',
                 color: '#7499B0',
                 yAxisId: 'right',
                 formatter: formatNumber,

@@ -297,6 +297,21 @@ export default function KendskabskampagnenPage() {
   totals.completionRate = totalImpressionsDisplay > 0 ? totals.videoViews100 / totalImpressionsDisplay : 0
   totals.cpm            = totalImpressionsDisplay > 0 ? (totals.spend / totalImpressionsDisplay) * 1000 : 0
 
+  // TV2 Play rapporterer kun videoViews100, ikke kvartiler — sum kun Meta+YouTube
+  // for kvartilkolonnerne så total 100% ikke overstiger total 75%
+  const videoQuartilesTotal = {
+    videoViews25:  apiData['meta'].videoViews25  + apiData['youtube'].videoViews25,
+    videoViews50:  apiData['meta'].videoViews50  + apiData['youtube'].videoViews50,
+    videoViews75:  apiData['meta'].videoViews75  + apiData['youtube'].videoViews75,
+    videoViews100: apiData['meta'].videoViews100 + apiData['youtube'].videoViews100,
+    impressions:   apiData['meta'].impressions   + apiData['youtube'].coviewedImpressions,
+    completionRate: 0 as number,
+  }
+  videoQuartilesTotal.completionRate =
+    videoQuartilesTotal.impressions > 0
+      ? videoQuartilesTotal.videoViews100 / videoQuartilesTotal.impressions
+      : 0
+
   const mergedDeviceStats: DeviceStat[] = React.useMemo(() => {
     const map: Record<string, number> = {}
     for (const s of [...metaDevice.data, ...googleDevice.data, ...TV2_DEVICE_STATS]) {
@@ -473,7 +488,7 @@ export default function KendskabskampagnenPage() {
             </button>
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wide text-foreground">Performance</h2>
-              <p className="text-xs text-muted-foreground">Reach, eksponeringer og videovisninger pr. kanal</p>
+              <p className="text-xs text-muted-foreground">Rækkevidde, eksponeringer og videovisninger pr. kanal</p>
             </div>
           </div>
 
@@ -481,7 +496,7 @@ export default function KendskabskampagnenPage() {
 
           {/* Summary cards */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Reach"         value={totals.reach > 0 ? formatNumber(totals.reach) : '—'}      loading={isLoading} accent="#D80070" />
+            <Stat label="Rækkevidde"    value={totals.reach > 0 ? formatNumber(totals.reach) : '—'}      loading={isLoading} accent="#D80070" />
             <Stat label="Eksponeringer" value={formatNumber(totalImpressionsDisplay)}                     loading={isLoading} accent="#D80070" />
             <Stat label="Frekvens"      value={totals.frequency > 0 ? totals.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
             <Stat label="CPM"           value={formatCurrency(totals.cpm)}                                loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
@@ -497,12 +512,12 @@ export default function KendskabskampagnenPage() {
               <div className="col-span-3">
                 <VideoFunnel
                   data={{
-                    impressions:    totalImpressionsDisplay,
-                    videoViews25:   totals.videoViews25,
-                    videoViews50:   totals.videoViews50,
-                    videoViews75:   totals.videoViews75,
-                    videoViews100:  totals.videoViews100,
-                    completionRate: totals.completionRate,
+                    impressions:    videoQuartilesTotal.impressions,
+                    videoViews25:   videoQuartilesTotal.videoViews25,
+                    videoViews50:   videoQuartilesTotal.videoViews50,
+                    videoViews75:   videoQuartilesTotal.videoViews75,
+                    videoViews100:  videoQuartilesTotal.videoViews100,
+                    completionRate: videoQuartilesTotal.completionRate,
                   }}
                   loading={isLoading}
                   color="#D80070"
@@ -547,7 +562,7 @@ export default function KendskabskampagnenPage() {
               <thead>
                 <tr>
                   <TH>Kanal</TH>
-                  <TH right>Reach</TH>
+                  <TH right>Rækkevidde</TH>
                   <TH right>Eksponeringer</TH>
                   <TH right>Frekvens</TH>
                   <TH right>Klik på link</TH>
@@ -621,11 +636,11 @@ export default function KendskabskampagnenPage() {
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatNumber(totalImpressionsDisplay)}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.frequency > 0 ? totals.frequency.toFixed(2) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.linkClicks > 0 ? formatNumber(totals.linkClicks) : dash}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews25  > 0 ? formatNumber(totals.videoViews25)  : dash}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews50  > 0 ? formatNumber(totals.videoViews50)  : dash}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews75  > 0 ? formatNumber(totals.videoViews75)  : dash}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews100 > 0 ? formatNumber(totals.videoViews100) : dash}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.videoViews100 > 0 ? formatPercent(totals.completionRate) : dash}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : videoQuartilesTotal.videoViews25  > 0 ? formatNumber(videoQuartilesTotal.videoViews25)  : dash}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : videoQuartilesTotal.videoViews50  > 0 ? formatNumber(videoQuartilesTotal.videoViews50)  : dash}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : videoQuartilesTotal.videoViews75  > 0 ? formatNumber(videoQuartilesTotal.videoViews75)  : dash}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : videoQuartilesTotal.videoViews100 > 0 ? formatNumber(videoQuartilesTotal.videoViews100) : dash}</TD>
+                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : videoQuartilesTotal.videoViews100 > 0 ? formatPercent(videoQuartilesTotal.completionRate) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatCurrency(totals.cpm)}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totalImpressionsDisplay > 0 && totals.linkClicks > 0 ? formatPercent(totals.linkClicks / totalImpressionsDisplay) : dash}</TD>
                 </tr>

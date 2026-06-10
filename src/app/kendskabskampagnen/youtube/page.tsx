@@ -118,7 +118,7 @@ export default function YouTubePage() {
           <SectionHead>Resultater for YouTube</SectionHead>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Eksponeringer" value={impressions > 0 ? formatNumber(impressions) : '—'}  loading={isLoading} />
-            <Stat label="Reach"         value={reach > 0 ? formatNumber(reach) : '—'}              loading={isLoading} />
+            <Stat label="Rækkevidde"    value={reach > 0 ? formatNumber(reach) : '—'}              loading={isLoading} />
             <Stat label="Frekvens"      value={frequency > 0 ? frequency.toFixed(2) : '—'}         loading={isLoading} sub="eksponeringer pr. person" />
             <Stat label="CPM"           value={formatCurrency(data.cpm)}                            loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>

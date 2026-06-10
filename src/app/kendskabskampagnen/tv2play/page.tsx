@@ -85,7 +85,7 @@ export default function TV2PlayPage() {
           <SectionHead>Resultater for TV2 Play</SectionHead>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Eksponeringer" value={formatNumber(tv2Data.impressions)} />
-            <Stat label="Reach"         value={formatNumber(tv2Data.reach)} />
+            <Stat label="Rækkevidde"    value={formatNumber(tv2Data.reach)} />
             <Stat label="Frekvens"      value={frequency.toFixed(2)}   sub="eksponeringer pr. person" />
             <Stat label="CPM"           value={formatCurrency(tv2Data.cpm)} sub="pr. 1.000 eksponeringer" />
           </div>

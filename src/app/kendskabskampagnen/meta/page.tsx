@@ -104,7 +104,7 @@ export default function MetaPage() {
           <SectionHead>Resultater for Meta</SectionHead>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Eksponeringer" value={formatNumber(data.impressions)}                        loading={isLoading} />
-            <Stat label="Reach"         value={data.reach > 0 ? formatNumber(data.reach) : '—'}      loading={isLoading} />
+            <Stat label="Rækkevidde"    value={data.reach > 0 ? formatNumber(data.reach) : '—'}      loading={isLoading} />
             <Stat label="Frekvens"      value={data.frequency > 0 ? data.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" />
             <Stat label="CPM"           value={formatCurrency(data.cpm)}                              loading={isLoading} sub="pr. 1.000 eksponeringer" />
           </div>
