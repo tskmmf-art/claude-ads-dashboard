@@ -102,6 +102,7 @@ export default function TV2PlayPage() {
                   completionRate: tv2Data.completionRate,
                 }}
                 color={BRAND}
+                showEmptyQuartiles
               />
             </div>
             <div className="col-span-1">

@@ -11,44 +11,53 @@ export interface VideoFunnelData {
 }
 
 interface Props {
-  data:     VideoFunnelData
-  loading?: boolean
-  color?:   string
+  data:                VideoFunnelData
+  loading?:            boolean
+  color?:              string
+  showEmptyQuartiles?: boolean
 }
 
 const BAR_MAX_PX = 180
 
-export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
+export function VideoFunnel({ data, loading, color = '#D80070', showEmptyQuartiles = false }: Props) {
   const imp = data.impressions
 
-  const stages = [
-    ...(data.videoViews25 != null ? [{ label: '25% set',  value: data.videoViews25 }] : []),
-    ...(data.videoViews50 != null ? [{ label: '50% set',  value: data.videoViews50 }] : []),
-    ...(data.videoViews75 != null ? [{ label: '75% set',  value: data.videoViews75 }] : []),
+  type Stage = { label: string; value: number; placeholder?: boolean }
+
+  const stages: Stage[] = [
+    ...(data.videoViews25 != null
+      ? [{ label: '25% set', value: data.videoViews25 }]
+      : showEmptyQuartiles ? [{ label: '25% set', value: 0, placeholder: true }] : []),
+    ...(data.videoViews50 != null
+      ? [{ label: '50% set', value: data.videoViews50 }]
+      : showEmptyQuartiles ? [{ label: '50% set', value: 0, placeholder: true }] : []),
+    ...(data.videoViews75 != null
+      ? [{ label: '75% set', value: data.videoViews75 }]
+      : showEmptyQuartiles ? [{ label: '75% set', value: 0, placeholder: true }] : []),
     { label: '100% set', value: data.videoViews100 },
   ]
 
-  const max = Math.max(...stages.map(s => s.value), 1)
+  const max = Math.max(...stages.filter(s => !s.placeholder).map(s => s.value), 1)
 
   return (
     <div className="rounded-xl border bg-white shadow-sm p-6">
       {/* Chart area */}
       <div className="flex items-end justify-around gap-4" style={{ height: BAR_MAX_PX + 40 }}>
-        {stages.map(({ label, value }) => {
-          const ratio = value / max
-          const barH  = Math.max(Math.round(ratio * BAR_MAX_PX), 6)
+        {stages.map(({ label, value, placeholder }) => {
+          const ratio = placeholder ? 1 : value / max
+          const barH  = placeholder ? BAR_MAX_PX : Math.max(Math.round(ratio * BAR_MAX_PX), 6)
 
           return (
             <div key={label} className="flex flex-col items-center gap-1.5 flex-1">
               <span className="text-xs font-semibold tabular-nums text-foreground text-center leading-tight">
-                {loading ? '' : formatNumber(value)}
+                {loading || placeholder ? '' : formatNumber(value)}
               </span>
               <div
                 className="w-full rounded-t-lg"
                 style={{
                   height:          loading ? BAR_MAX_PX * 0.5 : barH,
-                  backgroundColor: color,
-                  opacity:         loading ? 0.12 : 0.25 + ratio * 0.75,
+                  backgroundColor: placeholder ? '#e5e7eb' : color,
+                  opacity:         loading ? 0.12 : placeholder ? 1 : 0.25 + ratio * 0.75,
                   transition:      'height 0.6s ease, opacity 0.6s ease',
                   minHeight:       6,
                 }}
@@ -60,12 +69,12 @@ export function VideoFunnel({ data, loading, color = '#D80070' }: Props) {
 
       {/* X-axis labels */}
       <div className="flex justify-around gap-4 mt-2">
-        {stages.map(({ label, value }) => {
+        {stages.map(({ label, value, placeholder }) => {
           const pct = imp > 0 ? value / imp : null
           return (
             <div key={label} className="flex-1 flex flex-col items-center gap-0.5">
               <span className="text-xs text-muted-foreground text-center leading-tight">{label}</span>
-              {pct !== null && !loading && (
+              {!placeholder && pct !== null && !loading && (
                 <span className="text-xs font-semibold" style={{ color }}>
                   {formatPercent(pct)}
                 </span>
