@@ -16,6 +16,7 @@ import {
   type KanalConfig,
 } from '@/lib/config/kendskabs'
 import type { AwarenessData, DemoCell, DeviceStat } from '@/lib/api/awareness'
+import { TV2_DEVICE_STATS } from './tv2play/page'
 import { VideoFunnel } from '@/components/VideoFunnel'
 import { DevicePieChart } from '@/components/DevicePieChart'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
@@ -298,7 +299,7 @@ export default function KendskabskampagnenPage() {
 
   const mergedDeviceStats: DeviceStat[] = React.useMemo(() => {
     const map: Record<string, number> = {}
-    for (const s of [...metaDevice.data, ...googleDevice.data]) {
+    for (const s of [...metaDevice.data, ...googleDevice.data, ...TV2_DEVICE_STATS]) {
       map[s.device] = (map[s.device] ?? 0) + s.impressions
     }
     return Object.entries(map)
