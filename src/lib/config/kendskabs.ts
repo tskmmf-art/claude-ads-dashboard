@@ -8,7 +8,7 @@ export const KAMPAGNE_PERIODE = {
   end:   new Date('2026-06-30'),
 }
 
-export const SAMLET_BUDGET = 150_000 // kr.
+export const SAMLET_BUDGET = 200_000 // kr. (150.000 kampagnebudget + 50.000 buffer)
 
 export interface KanalConfig {
   id:          string
@@ -16,6 +16,7 @@ export interface KanalConfig {
   budget:      number                        // kr. for hele kampagneperioden
   platform:    'meta' | 'google' | null      // null = manuel/ingen API
   manualReach?: number                       // manuelt indtastet reach (unikke brugere)
+  budgetOnly?: boolean                       // true = vises kun i budgetoversigten, ikke i performance
 }
 
 export const KANALER: KanalConfig[] = [
@@ -23,6 +24,7 @@ export const KANALER: KanalConfig[] = [
   { id: 'youtube', name: 'YouTube Ads',  budget: 50_000, platform: 'google', manualReach: 0 },
   // ↑ Opdater manualReach med "Unikke brugere" fra Google Ads UI
   { id: 'tv2play', name: 'TV2 Play Ads', budget: 60_000, platform: null     },
+  { id: 'buffer',  name: 'Buffer',       budget: 50_000, platform: null, budgetOnly: true },
 ]
 
 export const TV2_DEVICE_STATS = [

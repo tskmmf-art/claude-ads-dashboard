@@ -277,7 +277,7 @@ export default function KendskabskampagnenPage() {
 
   // ── Performance ───────────────────────────────────────────────────────────
 
-  const totals: AwarenessData = KANALER.reduce((acc, k) => {
+  const totals: AwarenessData = KANALER.filter(k => !k.budgetOnly).reduce((acc, k) => {
     const d = apiData[k.id]
     return {
       spend:               acc.spend               + d.spend,
@@ -567,7 +567,7 @@ export default function KendskabskampagnenPage() {
                 </tr>
               </thead>
               <tbody>
-                {KANALER.map((k) => {
+                {KANALER.filter(k => !k.budgetOnly).map((k) => {
                   const d       = apiData[k.id]
                   const loading = kanalIsLoading(k)
                   const isTv2   = k.id === 'tv2play'
