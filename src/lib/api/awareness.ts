@@ -118,7 +118,7 @@ export async function fetchMetaAwareness(
 
 // ── Google Ads ────────────────────────────────────────────────────────────────
 
-const GOOGLE_BASE = 'https://googleads.googleapis.com/v20'
+const GOOGLE_BASE = 'https://googleads.googleapis.com/v23'
 
 async function googleAccessToken(): Promise<string> {
   const clientId     = process.env.GOOGLE_ADS_CLIENT_ID
