@@ -1,8 +1,8 @@
 // Awareness-specifikke API-kald: henter video-metrics + reach aggregeret for perioden
 
-const META_BASE = 'https://graph.facebook.com/v25.0'
+const META_BASE = 'https://graph.facebook.com/v19.0'
 const LI_BASE   = 'https://api.linkedin.com/rest'
-const LI_VER    = '202606'
+const LI_VER    = '202503'
 
 function metaToken() {
   const t = process.env.META_ACCESS_TOKEN
