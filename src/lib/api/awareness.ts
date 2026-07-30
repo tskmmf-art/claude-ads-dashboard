@@ -254,7 +254,14 @@ function sumActions(raw: unknown): number {
   return actions.reduce((sum, a) => sum + (parseInt(a.value) || 0), 0)
 }
 
-/** Fælles Meta-breakdown-hentning — grupperer eksponeringer + thruplays pr. segment */
+/**
+ * Fælles Meta-breakdown-hentning — grupperer eksponeringer + thruplays pr. segment.
+ *
+ * Thruplays er en tilføjelse oven på et kald der virkede med kun 'impressions'.
+ * Afviser Meta feltet (fx fordi kontoen ikke har video-actions), må det ikke
+ * vælte hele enhedsfordelingen — så prøver vi igen uden, og lever med at
+ * thruplay-kagen står tom.
+ */
 async function fetchMetaBreakdown(
   accountId: string,
   since: string,
@@ -262,27 +269,39 @@ async function fetchMetaBreakdown(
   breakdown: 'device_platform' | 'publisher_platform',
   labels: Record<string, string>
 ): Promise<DeviceStat[]> {
-  const params = new URLSearchParams({
-    fields:      'impressions,video_thruplay_watched_actions',
-    breakdowns:  breakdown,
-    time_range:  JSON.stringify({ since, until }),
-    level:       'account',
-    access_token: metaToken(),
-  })
+  async function attempt(withThruplays: boolean) {
+    const params = new URLSearchParams({
+      fields:      withThruplays ? 'impressions,video_thruplay_watched_actions' : 'impressions',
+      breakdowns:  breakdown,
+      time_range:  JSON.stringify({ since, until }),
+      level:       'account',
+      access_token: metaToken(),
+    })
 
-  const res = await fetch(`${META_BASE}/${accountId}/insights?${params}`)
-  if (!res.ok) throw new Error(`Meta ${breakdown} fetch failed: ${res.status}`)
-  const json = await res.json()
+    const res = await fetch(`${META_BASE}/${accountId}/insights?${params}`)
+    if (!res.ok) {
+      throw new Error(`Meta ${breakdown} fetch failed: ${res.status} ${(await res.text()).slice(0, 300)}`)
+    }
+    const json = await res.json()
 
-  const grouped: Record<string, DeviceStat> = {}
-  for (const row of (json.data ?? [])) {
-    const key = labels[row[breakdown]] ?? 'Andet'
-    const bucket = grouped[key] ??= { device: key, impressions: 0, completions: 0 }
-    bucket.impressions += parseInt(row.impressions) || 0
-    bucket.completions = (bucket.completions ?? 0) + sumActions(row.video_thruplay_watched_actions)
+    const grouped: Record<string, DeviceStat> = {}
+    for (const row of (json.data ?? [])) {
+      const key = labels[row[breakdown]] ?? 'Andet'
+      const bucket = grouped[key] ??= { device: key, impressions: 0, completions: 0 }
+      bucket.impressions += parseInt(row.impressions) || 0
+      if (withThruplays) {
+        bucket.completions = (bucket.completions ?? 0) + sumActions(row.video_thruplay_watched_actions)
+      }
+    }
+    return Object.values(grouped).sort((a, b) => b.impressions - a.impressions)
   }
 
-  return Object.values(grouped).sort((a, b) => b.impressions - a.impressions)
+  try {
+    return await attempt(true)
+  } catch (err) {
+    console.warn(`[awareness] Meta ${breakdown} uden thruplays —`, err instanceof Error ? err.message : err)
+    return attempt(false)
+  }
 }
 
 export async function fetchMetaDeviceStats(
@@ -312,44 +331,61 @@ const GOOGLE_DEVICE_MAP: Record<string, string> = {
   OTHER:         'Andet',
 }
 
+/**
+ * Enhedsfordeling fra Google Ads.
+ *
+ * video_quartile_p100_rate er tilføjet oven på en forespørgsel der virkede med
+ * kun impressions. GAQL afviser hele forespørgslen hvis en metrik ikke kan
+ * kombineres med segments.device, så et afslag må ikke koste enhedsdataene —
+ * vi prøver igen uden metrikken.
+ */
 export async function fetchGoogleDeviceStats(
   accountId: string,
   since: string,
   until: string
 ): Promise<DeviceStat[]> {
-  const query = `
-    SELECT
-      segments.device,
-      metrics.impressions,
-      metrics.video_quartile_p100_rate
-    FROM campaign
-    WHERE segments.date BETWEEN '${since}' AND '${until}'
-      AND campaign.status != 'REMOVED'
-  `
+  async function attempt(withCompletions: boolean) {
+    const query = `
+      SELECT
+        segments.device,
+        metrics.impressions${withCompletions ? ',\n        metrics.video_quartile_p100_rate' : ''}
+      FROM campaign
+      WHERE segments.date BETWEEN '${since}' AND '${until}'
+        AND campaign.status != 'REMOVED'
+    `
 
-  const res = await fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
-    method: 'POST',
-    headers: await googleHeaders(),
-    body: JSON.stringify({ query }),
-  })
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Google device stats fetch failed: ${res.status} ${err}`)
+    const res = await fetch(`${GOOGLE_BASE}/customers/${accountId}/googleAds:search`, {
+      method: 'POST',
+      headers: await googleHeaders(),
+      body: JSON.stringify({ query }),
+    })
+    if (!res.ok) {
+      throw new Error(`Google device stats fetch failed: ${res.status} ${(await res.text()).slice(0, 300)}`)
+    }
+
+    const json = await res.json()
+    const grouped: Record<string, DeviceStat> = {}
+
+    for (const r of (json.results ?? [])) {
+      const device = GOOGLE_DEVICE_MAP[r.segments?.device] ?? 'Andet'
+      const imp    = parseInt(r.metrics?.impressions ?? '0') || 0
+      const bucket = grouped[device] ??= { device, impressions: 0, completions: 0 }
+      bucket.impressions += imp
+      if (withCompletions) {
+        bucket.completions = (bucket.completions ?? 0)
+          + Math.round((r.metrics?.videoQuartileP100Rate ?? 0) * imp)
+      }
+    }
+
+    return Object.values(grouped).sort((a, b) => b.impressions - a.impressions)
   }
 
-  const json = await res.json()
-  const grouped: Record<string, DeviceStat> = {}
-
-  for (const r of (json.results ?? [])) {
-    const device = GOOGLE_DEVICE_MAP[r.segments?.device] ?? 'Andet'
-    const imp    = parseInt(r.metrics?.impressions ?? '0') || 0
-    const bucket = grouped[device] ??= { device, impressions: 0, completions: 0 }
-    bucket.impressions += imp
-    bucket.completions = (bucket.completions ?? 0)
-      + Math.round((r.metrics?.videoQuartileP100Rate ?? 0) * imp)
+  try {
+    return await attempt(true)
+  } catch (err) {
+    console.warn('[awareness] Google enhedsdata uden gennemførelser —', err instanceof Error ? err.message : err)
+    return attempt(false)
   }
-
-  return Object.values(grouped).sort((a, b) => b.impressions - a.impressions)
 }
 
 // ── Meta demographics ─────────────────────────────────────────────────────────
