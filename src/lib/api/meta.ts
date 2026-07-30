@@ -9,7 +9,11 @@ function token() {
 
 export async function fetchMetaAccounts(): Promise<AdAccount[]> {
   const res = await fetch(`${BASE}/me/adaccounts?fields=id,name,currency&limit=100&access_token=${token()}`)
-  if (!res.ok) throw new Error(`Meta accounts fetch failed: ${res.status}`)
+  if (!res.ok) {
+    // Metas svarkrop forklarer hvorfor (udløbet token, manglende rettighed, …).
+    // Uden den siger en 400 ingenting.
+    throw new Error(`Meta accounts fetch failed: ${res.status} ${(await res.text()).slice(0, 400)}`)
+  }
   const json = await res.json()
   return (json.data ?? []).map((a: { id: string; name: string; currency: string }) => ({
     id: a.id,

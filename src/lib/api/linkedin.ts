@@ -22,7 +22,9 @@ export async function fetchLinkedInAccounts(): Promise<AdAccount[]> {
   const res = await fetch(`${BASE}/adAccounts?q=search`, {
     headers: headers(),
   })
-  if (!res.ok) throw new Error(`LinkedIn accounts fetch failed: ${res.status}`)
+  if (!res.ok) {
+    throw new Error(`LinkedIn accounts fetch failed: ${res.status} ${(await res.text()).slice(0, 400)}`)
+  }
   const json = await res.json()
 
   return (json.elements ?? []).map((a: { id: number; name: string; currency: string }) => ({
