@@ -140,13 +140,13 @@ export default function DashboardPage() {
         {/* Dual charts row */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <DualLineChart
-            title="Impressions & Rækkevidde"
+            title="Eksponeringer & Rækkevidde"
             data={dailyMetrics}
             isLoading={isLoading}
             lines={[
               {
                 key: 'impressions',
-                label: 'Impressions',
+                label: 'Eksponeringer',
                 color: '#D80070',
                 yAxisId: 'left',
                 formatter: formatNumber,
@@ -208,7 +208,7 @@ export default function DashboardPage() {
                   <tr className="border-b text-xs uppercase text-muted-foreground">
                     <th className="pb-2 text-left">Platform</th>
                     <th className="pb-2 text-right">Forbrug</th>
-                    <th className="pb-2 text-right">Impressions</th>
+                    <th className="pb-2 text-right">Eksponeringer</th>
                     <th className="pb-2 text-right">Klik</th>
                     <th className="pb-2 text-right">CTR</th>
                     <th className="pb-2 text-right">CPC</th>

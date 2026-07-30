@@ -41,7 +41,7 @@ export function KpiCards({ totals, isLoading, days }: Props) {
       {/* Row 1 — reach & engagement, MMF Rød */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard
-          label="Impressions"
+          label="Eksponeringer"
           value={formatNumber(totals.impressions)}
           isLoading={isLoading}
           sub={`Ø ${formatNumber(Math.round(totals.impressions / Math.max(days, 1)))} / dag`}
