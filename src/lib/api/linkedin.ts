@@ -1,7 +1,6 @@
 import type { AdAccount, AdMetrics } from '@/types'
+import { LINKEDIN_BASE as BASE, LINKEDIN_API_VERSION as LI_VERSION } from './versions'
 
-const BASE = 'https://api.linkedin.com/rest'
-const LI_VERSION = '202503'
 const LI_PAGE_SIZE = 100 // max per page
 
 function headers() {

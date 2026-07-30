@@ -1,6 +1,5 @@
 import type { AdAccount, AdMetrics } from '@/types'
-
-const BASE = 'https://graph.facebook.com/v25.0'
+import { META_BASE as BASE } from './versions'
 
 function token() {
   const t = process.env.META_ACCESS_TOKEN

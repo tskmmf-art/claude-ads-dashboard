@@ -1,8 +1,11 @@
 // Awareness-specifikke API-kald: henter video-metrics + reach aggregeret for perioden
 
-const META_BASE = 'https://graph.facebook.com/v25.0'
-const LI_BASE   = 'https://api.linkedin.com/rest'
-const LI_VER    = '202606'
+import {
+  META_BASE,
+  GOOGLE_ADS_BASE as GOOGLE_BASE,
+  LINKEDIN_BASE as LI_BASE,
+  LINKEDIN_API_VERSION as LI_VER,
+} from './versions'
 
 function metaToken() {
   const t = process.env.META_ACCESS_TOKEN
@@ -118,8 +121,6 @@ export async function fetchMetaAwareness(
 }
 
 // ── Google Ads ────────────────────────────────────────────────────────────────
-
-const GOOGLE_BASE = 'https://googleads.googleapis.com/v23'
 
 async function googleAccessToken(): Promise<string> {
   const clientId     = process.env.GOOGLE_ADS_CLIENT_ID
