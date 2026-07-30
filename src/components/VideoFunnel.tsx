@@ -24,16 +24,18 @@ export function VideoFunnel({ data, loading, color = '#D80070', showEmptyQuartil
 
   type Stage = { label: string; value: number; placeholder?: boolean }
 
+  // Placeholder-kvartiler (TV2 Play rapporterer kun fuldførelse) vises som fuldhøje
+  // grå søjler med eksponeringstallet, så de ikke læses som "0 visninger"
   const stages: Stage[] = [
     ...(data.videoViews25 != null
       ? [{ label: '25% set', value: data.videoViews25 }]
-      : showEmptyQuartiles ? [{ label: '25% set', value: 0, placeholder: true }] : []),
+      : showEmptyQuartiles ? [{ label: '25% set', value: imp, placeholder: true }] : []),
     ...(data.videoViews50 != null
       ? [{ label: '50% set', value: data.videoViews50 }]
-      : showEmptyQuartiles ? [{ label: '50% set', value: 0, placeholder: true }] : []),
+      : showEmptyQuartiles ? [{ label: '50% set', value: imp, placeholder: true }] : []),
     ...(data.videoViews75 != null
       ? [{ label: '75% set', value: data.videoViews75 }]
-      : showEmptyQuartiles ? [{ label: '75% set', value: 0, placeholder: true }] : []),
+      : showEmptyQuartiles ? [{ label: '75% set', value: imp, placeholder: true }] : []),
     { label: '100% set', value: data.videoViews100 },
   ]
 
@@ -49,8 +51,10 @@ export function VideoFunnel({ data, loading, color = '#D80070', showEmptyQuartil
 
           return (
             <div key={label} className="flex flex-col items-center gap-1.5 flex-1">
-              <span className="text-xs font-semibold tabular-nums text-foreground text-center leading-tight">
-                {loading || placeholder ? '' : formatNumber(value)}
+              <span className={`text-xs font-semibold tabular-nums text-center leading-tight ${
+                placeholder ? 'text-muted-foreground/50' : 'text-foreground'
+              }`}>
+                {loading ? '' : formatNumber(value)}
               </span>
               <div
                 className="w-full rounded-t-lg"
@@ -73,7 +77,9 @@ export function VideoFunnel({ data, loading, color = '#D80070', showEmptyQuartil
           const pct = imp > 0 ? value / imp : null
           return (
             <div key={label} className="flex-1 flex flex-col items-center gap-0.5">
-              <span className="text-xs text-muted-foreground text-center leading-tight">{label}</span>
+              <span className={`text-xs text-center leading-tight ${
+                placeholder ? 'text-muted-foreground/50' : 'text-muted-foreground'
+              }`}>{label}</span>
               {!placeholder && pct !== null && !loading && (
                 <span className="text-xs font-semibold" style={{ color }}>
                   {formatPercent(pct)}

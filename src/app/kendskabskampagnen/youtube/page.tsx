@@ -7,9 +7,11 @@ import { DateRangePicker } from '@/components/filters/DateRangePicker'
 import { AccountSelector } from '@/components/filters/AccountSelector'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CampaignGantt } from '@/components/CampaignGantt'
+import { CampaignCards, type Campaign } from '@/components/CampaignCards'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
 import { DevicePieChart } from '@/components/DevicePieChart'
 import { VideoFunnel } from '@/components/VideoFunnel'
+import { RevealToggle, Revealable } from '@/components/RevealToggle'
 import { useDemographics } from '@/hooks/useDemographics'
 import { useDeviceStats } from '@/hooks/useDeviceStats'
 import { KAMPAGNE_PERIODE, KANALER } from '@/lib/config/kendskabs'
@@ -24,6 +26,27 @@ const YOUTUBE_PHASES = [
   { name: 'Reach (Skippable)', startWeek: 19, endWeek: 21, budget: 15_000, color: '#FF0000' },
   { name: 'Non-skip',          startWeek: 19, endWeek: 24, budget: 25_000, color: '#FF5555' },
   { name: 'Retargeting',       startWeek: 22, endWeek: 26, budget: 10_000, color: '#FFAAAA' },
+]
+
+const YOUTUBE_CAMPAIGNS: Campaign[] = [
+  {
+    name: 'Skippable In-Stream',
+    description: 'Afspilles før en video. Seeren kan springe over efter 5 sekunder.',
+    duration: 'Op til 30 sek',
+    skippable: 'Kan skippes efter 5 sek',
+  },
+  {
+    name: 'Non-skip In-Stream',
+    description: 'Afspilles før eller under en YouTube-video. Seeren kan ikke springe over.',
+    duration: '15 sek',
+    skippable: 'Kan ikke skippes',
+  },
+  {
+    name: 'Video Reach — Target Frequency',
+    description: 'Google vælger automatisk format for at nå et defineret frekvens-mål.',
+    duration: 'Variabel',
+    skippable: 'Non-skip eller bumper',
+  },
 ]
 
 function YouTubeLogo() {
@@ -66,6 +89,7 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 export default function YouTubePage() {
   const [dateRange, setDateRange] = React.useState<DateRange>(KAMPAGNE_RANGE)
   const [accountId, setAccountId] = React.useState<string | null>(null)
+  const [revealed,  setRevealed]  = React.useState(false)
 
   const [manualReach] = React.useState<number>(() => {
     if (typeof window === 'undefined') return youtubeKanal.manualReach ?? 0
@@ -115,45 +139,57 @@ export default function YouTubePage() {
         </div>
 
         <div>
-          <SectionHead>Resultater for YouTube</SectionHead>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Eksponeringer" value={impressions > 0 ? formatNumber(impressions) : '—'}  loading={isLoading} />
-            <Stat label="Rækkevidde"    value={reach > 0 ? formatNumber(reach) : '—'}              loading={isLoading} />
-            <Stat label="Frekvens"      value={frequency > 0 ? frequency.toFixed(2) : '—'}         loading={isLoading} sub="eksponeringer pr. person" />
-            <Stat label="CPM"           value={formatCurrency(data.cpm)}                            loading={isLoading} sub="pr. 1.000 eksponeringer" />
-          </div>
+          <SectionHead>Kampagner</SectionHead>
+          <CampaignCards campaigns={YOUTUBE_CAMPAIGNS} color={BRAND} />
         </div>
 
-        <div>
-          <SectionHead>Videovisninger — YouTube</SectionHead>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="col-span-3">
-              <VideoFunnel
-                data={{
-                  impressions:    data.coviewedImpressions,
-                  videoViews25:   data.videoViews25,
-                  videoViews50:   data.videoViews50,
-                  videoViews75:   data.videoViews75,
-                  videoViews100:  data.videoViews100,
-                  completionRate: data.completionRate,
-                }}
-                loading={isLoading}
-                color={BRAND}
-              />
-            </div>
-            <div className="col-span-1">
-              <DevicePieChart stats={deviceData} loading={deviceLoading} color={BRAND} />
-            </div>
-          </div>
-        </div>
+        <RevealToggle revealed={revealed} onToggle={() => setRevealed(v => !v)} />
 
-        <div>
-          <SectionHead>Køn og alder — YouTube</SectionHead>
-          <div className="grid grid-cols-2 gap-4">
-            <DemographicHeatmap cells={demoData} loading={demoLoading} color={BRAND}   metric="impressions" title="Eksponeringer" />
-            <DemographicHeatmap cells={demoData} loading={demoLoading} color="#AA0000" metric="completions"  title="Videogennemførelse" />
+        <Revealable revealed={revealed}>
+          <div className="space-y-6">
+            <div>
+              <SectionHead>Resultater for YouTube</SectionHead>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Stat label="Eksponeringer" value={impressions > 0 ? formatNumber(impressions) : '—'}  loading={isLoading} />
+                <Stat label="Reach"         value={reach > 0 ? formatNumber(reach) : '—'}              loading={isLoading} />
+                <Stat label="Frekvens"      value={frequency > 0 ? frequency.toFixed(2) : '—'}         loading={isLoading} sub="eksponeringer pr. person" />
+                <Stat label="CPM"           value={formatCurrency(data.cpm)}                            loading={isLoading} sub="pr. 1.000 eksponeringer" />
+              </div>
+            </div>
+
+            <div>
+              <SectionHead>Videovisninger — YouTube</SectionHead>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+                <div className="lg:col-span-2">
+                  <VideoFunnel
+                    data={{
+                      impressions:    data.coviewedImpressions,
+                      videoViews25:   data.videoViews25,
+                      videoViews50:   data.videoViews50,
+                      videoViews75:   data.videoViews75,
+                      videoViews100:  data.videoViews100,
+                      completionRate: data.completionRate,
+                    }}
+                    loading={isLoading}
+                    color={BRAND}
+                  />
+                </div>
+                <DevicePieChart stats={deviceData} loading={deviceLoading} color={BRAND}
+                  title="Eksponeringer pr. enhed" metric="impressions" />
+                <DevicePieChart stats={deviceData} loading={deviceLoading} color={BRAND}
+                  title="Thruplays pr. enhed"     metric="completions" />
+              </div>
+            </div>
+
+            <div>
+              <SectionHead>Køn og alder — YouTube</SectionHead>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <DemographicHeatmap cells={demoData} loading={demoLoading} color={BRAND}   metric="impressions" title="Eksponeringer" />
+                <DemographicHeatmap cells={demoData} loading={demoLoading} color="#AA0000" metric="completions"  title="Videogennemførelse" />
+              </div>
+            </div>
           </div>
-        </div>
+        </Revealable>
       </main>
     </div>
   )

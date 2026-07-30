@@ -15,13 +15,14 @@ export function useDeviceStats(
   platform: 'meta' | 'google',
   accountId: string | null,
   dateRange: DateRange,
-  enabled: boolean
+  enabled: boolean,
+  breakdown: 'device' | 'platform' = 'device'
 ) {
   const since = formatDate(dateRange.from)
   const until = formatDate(dateRange.to)
 
   const key = enabled && accountId
-    ? `/api/device-stats?platform=${platform}&accountId=${accountId}&since=${since}&until=${until}`
+    ? `/api/device-stats?platform=${platform}&accountId=${accountId}&since=${since}&until=${until}&breakdown=${breakdown}`
     : null
 
   const { data, error, isLoading } = useSWR<{ data: DeviceStat[] }>(key, fetcher, {

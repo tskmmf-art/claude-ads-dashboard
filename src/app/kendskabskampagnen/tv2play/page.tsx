@@ -2,8 +2,10 @@
 
 import * as React from 'react'
 import { CampaignGantt } from '@/components/CampaignGantt'
+import { CampaignCards, type Campaign } from '@/components/CampaignCards'
 import { VideoFunnel } from '@/components/VideoFunnel'
 import { DevicePieChart } from '@/components/DevicePieChart'
+import { RevealToggle, Revealable } from '@/components/RevealToggle'
 import { TV2_DEVICE_STATS } from '@/lib/config/kendskabs'
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters'
 
@@ -13,6 +15,15 @@ const TV2_PHASES = [
   { name: 'Launch (Heavy)', startWeek: 19, endWeek: 21, budget: 40_000, color: '#E40012' },
   { name: 'Sustain',        startWeek: 22, endWeek: 24, budget: 20_000, color: '#EE5A64' },
   { name: 'Pause',          startWeek: 25, endWeek: 26, budget:      0, color: '#F5A8AE' },
+]
+
+const TV2_CAMPAIGNS: Campaign[] = [
+  {
+    name: 'Pre-roll Video',
+    description: 'Afspilles automatisk inden indhold på TV2 Play. Seeren skal se annoncen for at komme videre til programmet.',
+    duration: '15–30 sek',
+    skippable: 'Kan ikke skippes',
+  },
 ]
 
 const TV2_DEFAULTS = { impressions: 140883, reach: 69639, cpm: 269.86, completionRate: 0.9763 }
@@ -54,6 +65,8 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 }
 
 export default function TV2PlayPage() {
+  const [revealed, setRevealed] = React.useState(false)
+
   const [tv2Data] = React.useState(() => {
     if (typeof window === 'undefined') return TV2_DEFAULTS
     try {
@@ -82,34 +95,46 @@ export default function TV2PlayPage() {
         </div>
 
         <div>
-          <SectionHead>Resultater for TV2 Play</SectionHead>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Eksponeringer" value={formatNumber(tv2Data.impressions)} />
-            <Stat label="Rækkevidde"    value={formatNumber(tv2Data.reach)} />
-            <Stat label="Frekvens"      value={frequency.toFixed(2)}   sub="eksponeringer pr. person" />
-            <Stat label="CPM"           value={formatCurrency(tv2Data.cpm)} sub="pr. 1.000 eksponeringer" />
-          </div>
+          <SectionHead>Kampagner</SectionHead>
+          <CampaignCards campaigns={TV2_CAMPAIGNS} color={BRAND} />
         </div>
 
-        <div>
-          <SectionHead>Videovisninger — TV2 Play</SectionHead>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="col-span-3">
-              <VideoFunnel
-                data={{
-                  impressions:    tv2Data.impressions,
-                  videoViews100:  Math.round(tv2Data.impressions * tv2Data.completionRate),
-                  completionRate: tv2Data.completionRate,
-                }}
-                color={BRAND}
-                showEmptyQuartiles
-              />
+        <RevealToggle revealed={revealed} onToggle={() => setRevealed(v => !v)} />
+
+        <Revealable revealed={revealed}>
+          <div className="space-y-6">
+            <div>
+              <SectionHead>Resultater for TV2 Play</SectionHead>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Stat label="Eksponeringer" value={formatNumber(tv2Data.impressions)} />
+                <Stat label="Reach"         value={formatNumber(tv2Data.reach)} />
+                <Stat label="Frekvens"      value={frequency.toFixed(2)}   sub="eksponeringer pr. person" />
+                <Stat label="CPM"           value={formatCurrency(tv2Data.cpm)} sub="pr. 1.000 eksponeringer" />
+              </div>
             </div>
-            <div className="col-span-1">
-              <DevicePieChart stats={TV2_DEVICE_STATS} />
+
+            <div>
+              <SectionHead>Videovisninger — TV2 Play</SectionHead>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+                <div className="lg:col-span-2">
+                  <VideoFunnel
+                    data={{
+                      impressions:    tv2Data.impressions,
+                      videoViews100:  Math.round(tv2Data.impressions * tv2Data.completionRate),
+                      completionRate: tv2Data.completionRate,
+                    }}
+                    color={BRAND}
+                    showEmptyQuartiles
+                  />
+                </div>
+                <DevicePieChart stats={TV2_DEVICE_STATS} color={BRAND}
+                  title="Eksponeringer pr. enhed" metric="impressions" />
+                <DevicePieChart stats={TV2_DEVICE_STATS} color={BRAND}
+                  title="Thruplays pr. enhed"     metric="completions" />
+              </div>
             </div>
           </div>
-        </div>
+        </Revealable>
 
         <p className="text-xs text-muted-foreground">
           * Data indtastet manuelt — rediger tallene på hovedsiden

@@ -21,8 +21,9 @@ function liHeaders() {
 }
 
 export interface DeviceStat {
-  device:      string   // 'Mobile' | 'Desktop' | 'Tablet' | 'TV' | …
-  impressions: number
+  device:       string   // 'Mobile' | 'Desktop' | 'Tablet' | 'Connected TV' | 'Facebook' | …
+  impressions:  number
+  completions?: number   // thruplays / video 100% gennemførelser
 }
 
 export interface DemoCell {
@@ -239,32 +240,65 @@ const META_DEVICE_MAP: Record<string, string> = {
   unknown:            'Andet',
 }
 
-export async function fetchMetaDeviceStats(
+const META_PLATFORM_MAP: Record<string, string> = {
+  facebook:         'Facebook',
+  instagram:        'Instagram',
+  audience_network: 'Audience Network',
+  messenger:        'Messenger',
+}
+
+/** Summér en Meta action-array (fx video_thruplay_watched_actions) til ét tal */
+function sumActions(raw: unknown): number {
+  const actions = (raw as Array<{ value: string }> | undefined) ?? []
+  return actions.reduce((sum, a) => sum + (parseInt(a.value) || 0), 0)
+}
+
+/** Fælles Meta-breakdown-hentning — grupperer eksponeringer + thruplays pr. segment */
+async function fetchMetaBreakdown(
   accountId: string,
   since: string,
-  until: string
+  until: string,
+  breakdown: 'device_platform' | 'publisher_platform',
+  labels: Record<string, string>
 ): Promise<DeviceStat[]> {
   const params = new URLSearchParams({
-    fields:      'impressions',
-    breakdowns:  'device_platform',
+    fields:      'impressions,video_thruplay_watched_actions',
+    breakdowns:  breakdown,
     time_range:  JSON.stringify({ since, until }),
     level:       'account',
     access_token: metaToken(),
   })
 
   const res = await fetch(`${META_BASE}/${accountId}/insights?${params}`)
-  if (!res.ok) throw new Error(`Meta device stats fetch failed: ${res.status}`)
+  if (!res.ok) throw new Error(`Meta ${breakdown} fetch failed: ${res.status}`)
   const json = await res.json()
 
-  const grouped: Record<string, number> = {}
+  const grouped: Record<string, DeviceStat> = {}
   for (const row of (json.data ?? [])) {
-    const device = META_DEVICE_MAP[row.device_platform] ?? 'Andet'
-    grouped[device] = (grouped[device] ?? 0) + (parseInt(row.impressions) || 0)
+    const key = labels[row[breakdown]] ?? 'Andet'
+    const bucket = grouped[key] ??= { device: key, impressions: 0, completions: 0 }
+    bucket.impressions += parseInt(row.impressions) || 0
+    bucket.completions = (bucket.completions ?? 0) + sumActions(row.video_thruplay_watched_actions)
   }
 
-  return Object.entries(grouped)
-    .map(([device, impressions]) => ({ device, impressions }))
-    .sort((a, b) => b.impressions - a.impressions)
+  return Object.values(grouped).sort((a, b) => b.impressions - a.impressions)
+}
+
+export async function fetchMetaDeviceStats(
+  accountId: string,
+  since: string,
+  until: string
+): Promise<DeviceStat[]> {
+  return fetchMetaBreakdown(accountId, since, until, 'device_platform', META_DEVICE_MAP)
+}
+
+/** Eksponeringer + thruplays fordelt på Facebook / Instagram */
+export async function fetchMetaPlatformStats(
+  accountId: string,
+  since: string,
+  until: string
+): Promise<DeviceStat[]> {
+  return fetchMetaBreakdown(accountId, since, until, 'publisher_platform', META_PLATFORM_MAP)
 }
 
 // ── Google device stats ────────────────────────────────────────────────────────
@@ -285,7 +319,8 @@ export async function fetchGoogleDeviceStats(
   const query = `
     SELECT
       segments.device,
-      metrics.impressions
+      metrics.impressions,
+      metrics.video_quartile_p100_rate
     FROM campaign
     WHERE segments.date BETWEEN '${since}' AND '${until}'
       AND campaign.status != 'REMOVED'
@@ -302,16 +337,18 @@ export async function fetchGoogleDeviceStats(
   }
 
   const json = await res.json()
-  const grouped: Record<string, number> = {}
+  const grouped: Record<string, DeviceStat> = {}
 
   for (const r of (json.results ?? [])) {
     const device = GOOGLE_DEVICE_MAP[r.segments?.device] ?? 'Andet'
-    grouped[device] = (grouped[device] ?? 0) + (parseInt(r.metrics?.impressions ?? '0') || 0)
+    const imp    = parseInt(r.metrics?.impressions ?? '0') || 0
+    const bucket = grouped[device] ??= { device, impressions: 0, completions: 0 }
+    bucket.impressions += imp
+    bucket.completions = (bucket.completions ?? 0)
+      + Math.round((r.metrics?.videoQuartileP100Rate ?? 0) * imp)
   }
 
-  return Object.entries(grouped)
-    .map(([device, impressions]) => ({ device, impressions }))
-    .sort((a, b) => b.impressions - a.impressions)
+  return Object.values(grouped).sort((a, b) => b.impressions - a.impressions)
 }
 
 // ── Meta demographics ─────────────────────────────────────────────────────────

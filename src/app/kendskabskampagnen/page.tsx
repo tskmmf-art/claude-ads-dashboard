@@ -20,6 +20,7 @@ import type { AwarenessData, DemoCell, DeviceStat } from '@/lib/api/awareness'
 import { VideoFunnel } from '@/components/VideoFunnel'
 import { DevicePieChart } from '@/components/DevicePieChart'
 import { DemographicHeatmap } from '@/components/DemographicHeatmap'
+import { RevealToggle, Revealable } from '@/components/RevealToggle'
 import { useDemographics } from '@/hooks/useDemographics'
 import { useDeviceStats } from '@/hooks/useDeviceStats'
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils/formatters'
@@ -218,9 +219,10 @@ export default function KendskabskampagnenPage() {
     }
   }
 
-  // TV2 Play: byg AwarenessData fra manuelt indtastede tal
-  // TV2 Play rapporterer kun fuldførelse — da 97%+ gennemfører, sættes alle
-  // kvartiler lig videoViews100 så de indgår korrekt i de samlede totaler
+  // TV2 Play: byg AwarenessData fra manuelt indtastede tal.
+  // TV2 rapporterer kun fuldførelse. Pre-roll kan ikke skippes, så alle der får
+  // annoncen serveret passerer 25/50/75 % — derfor sættes de tre kvartiler lig
+  // eksponeringerne, mens 100 % er den faktisk målte fuldførelse.
   const tv2Completions = Math.round(tv2Data.impressions * tv2Data.completionRate)
   const tv2AwarenessData: AwarenessData = {
     ...empty,
@@ -230,9 +232,9 @@ export default function KendskabskampagnenPage() {
     frequency:      tv2Data.reach > 0 ? tv2Data.impressions / tv2Data.reach : 0,
     cpm:            tv2Data.cpm,
     completionRate: tv2Data.completionRate,
-    videoViews25:   tv2Completions,
-    videoViews50:   tv2Completions,
-    videoViews75:   tv2Completions,
+    videoViews25:   tv2Data.impressions,
+    videoViews50:   tv2Data.impressions,
+    videoViews75:   tv2Data.impressions,
     videoViews100:  tv2Completions,
   }
 
@@ -303,14 +305,23 @@ export default function KendskabskampagnenPage() {
   totals.completionRate = totalImpressionsDisplay > 0 ? totals.videoViews100 / totalImpressionsDisplay : 0
   totals.cpm            = totalImpressionsDisplay > 0 ? (totals.spend / totalImpressionsDisplay) * 1000 : 0
 
+  // Kanalerne navngiver de samme enheder forskelligt (Google: "TV", TV2: "Connected TV")
+  // — normaliseres så de lægges sammen til én kage i stedet for to skiver
+  const DEVICE_ALIASES: Record<string, string> = {
+    'TV':          'Connected TV',
+    'Smartphone':  'Mobile',
+  }
+
   const mergedDeviceStats: DeviceStat[] = React.useMemo(() => {
-    const map: Record<string, number> = {}
+    const map: Record<string, DeviceStat> = {}
     for (const s of [...metaDevice.data, ...googleDevice.data, ...TV2_DEVICE_STATS]) {
-      map[s.device] = (map[s.device] ?? 0) + s.impressions
+      const device = DEVICE_ALIASES[s.device] ?? s.device
+      const bucket = map[device] ??= { device, impressions: 0, completions: 0 }
+      bucket.impressions += s.impressions
+      bucket.completions  = (bucket.completions ?? 0) + (s.completions ?? 0)
     }
-    return Object.entries(map)
-      .map(([device, impressions]) => ({ device, impressions }))
-      .sort((a, b) => b.impressions - a.impressions)
+    return Object.values(map).sort((a, b) => b.impressions - a.impressions)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metaDevice.data, googleDevice.data])
 
   const mergedDemoData: DemoCell[] = React.useMemo(() => {
@@ -452,99 +463,24 @@ export default function KendskabskampagnenPage() {
         {/* ── SEKTION 2: PERFORMANCE ──────────────────────────────────────── */}
         <section>
           <div className="mb-3 flex items-center gap-3">
-            <button
-              onClick={() => setPerformanceRevealed(v => !v)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all ${
-                performanceRevealed
-                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-              }`}
-            >
-              {performanceRevealed ? (
-                <>
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                  </svg>
-                  Skjul resultater
-                </>
-              ) : (
-                <>
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  Vis resultater
-                </>
-              )}
-            </button>
+            <RevealToggle
+              revealed={performanceRevealed}
+              onToggle={() => setPerformanceRevealed(v => !v)}
+            />
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wide text-foreground">Performance</h2>
-              <p className="text-xs text-muted-foreground">Rækkevidde, eksponeringer og videovisninger pr. kanal</p>
+              <p className="text-xs text-muted-foreground">Reach, eksponeringer og videovisninger pr. kanal</p>
             </div>
           </div>
 
-          <div className={`transition-all duration-300 ${performanceRevealed ? '' : 'select-none blur-sm pointer-events-none'}`}>
+          <Revealable revealed={performanceRevealed}>
 
           {/* Summary cards */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Rækkevidde"    value={totals.reach > 0 ? formatNumber(totals.reach) : '—'}      loading={isLoading} accent="#D80070" />
+            <Stat label="Reach"         value={totals.reach > 0 ? formatNumber(totals.reach) : '—'}      loading={isLoading} accent="#D80070" />
             <Stat label="Eksponeringer" value={formatNumber(totalImpressionsDisplay)}                     loading={isLoading} accent="#D80070" />
             <Stat label="Frekvens"      value={totals.frequency > 0 ? totals.frequency.toFixed(2) : '—'} loading={isLoading} sub="eksponeringer pr. person" accent="#D80070" />
             <Stat label="CPM"           value={formatCurrency(totals.cpm)}                                loading={isLoading} sub="pr. 1.000 eksponeringer"  accent="#D80070" />
-          </div>
-
-          {/* Videovisninger */}
-          <div className="mb-4">
-            <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-foreground flex items-center gap-2">
-              <span className="inline-block h-3.5 w-1 rounded-none bg-mmf-red" />
-              Videovisninger — samlet
-            </h3>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="col-span-3">
-                <VideoFunnel
-                  data={{
-                    impressions:    totalImpressionsDisplay,
-                    videoViews25:   totals.videoViews25,
-                    videoViews50:   totals.videoViews50,
-                    videoViews75:   totals.videoViews75,
-                    videoViews100:  totals.videoViews100,
-                    completionRate: totals.completionRate,
-                  }}
-                  loading={isLoading}
-                  color="#D80070"
-                />
-              </div>
-              <div className="col-span-1">
-                <DevicePieChart
-                  stats={mergedDeviceStats}
-                  loading={metaDevice.isLoading || googleDevice.isLoading}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Køn og alder */}
-          <div className="mb-4">
-            <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-foreground flex items-center gap-2">
-              <span className="inline-block h-3.5 w-1 rounded-none bg-mmf-red" />
-              Køn og alder — samlet
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <DemographicHeatmap
-                cells={mergedDemoData}
-                loading={metaDemo.isLoading || googleDemo.isLoading}
-                color="#D80070"
-                metric="impressions"
-                title="Eksponeringer"
-              />
-              <DemographicHeatmap
-                cells={mergedDemoData}
-                loading={metaDemo.isLoading || googleDemo.isLoading}
-                color="#8B0040"
-                metric="completions"
-                title="Videogennemførelse"
-              />
-            </div>
           </div>
 
           {/* Performance table */}
@@ -553,7 +489,7 @@ export default function KendskabskampagnenPage() {
               <thead>
                 <tr>
                   <TH>Kanal</TH>
-                  <TH right>Rækkevidde</TH>
+                  <TH right>Reach</TH>
                   <TH right>Eksponeringer</TH>
                   <TH right>Frekvens</TH>
                   <TH right>Klik på link</TH>
@@ -563,7 +499,6 @@ export default function KendskabskampagnenPage() {
                   <TH right>Visn. 100%</TH>
                   <TH right>Fuldførelse%</TH>
                   <TH right>CPM</TH>
-                  <TH right>CTR</TH>
                 </tr>
               </thead>
               <tbody>
@@ -594,14 +529,15 @@ export default function KendskabskampagnenPage() {
                       {/* Klik på link */}
                       <TD right>{loading ? sk() : isTv2 ? dash : d.linkClicks > 0 ? formatNumber(d.linkClicks) : dash}</TD>
                       {/* Video-kvartiler */}
+                      {/* TV2's kvartiler er estimerede (= eksponeringer) og vises derfor dæmpet */}
                       <TD right>{loading ? sk() : isTv2
-                        ? <span className="text-muted-foreground/50 tabular-nums">({formatNumber(d.videoViews100)})</span>
+                        ? <span className="text-muted-foreground/50 tabular-nums">{formatNumber(d.videoViews25)}</span>
                         : d.videoViews25 > 0 ? formatNumber(d.videoViews25) : dash}</TD>
                       <TD right>{loading ? sk() : isTv2
-                        ? <span className="text-muted-foreground/50 tabular-nums">({formatNumber(d.videoViews100)})</span>
+                        ? <span className="text-muted-foreground/50 tabular-nums">{formatNumber(d.videoViews50)}</span>
                         : d.videoViews50 > 0 ? formatNumber(d.videoViews50) : dash}</TD>
                       <TD right>{loading ? sk() : isTv2
-                        ? <span className="text-muted-foreground/50 tabular-nums">({formatNumber(d.videoViews100)})</span>
+                        ? <span className="text-muted-foreground/50 tabular-nums">{formatNumber(d.videoViews75)}</span>
                         : d.videoViews75 > 0 ? formatNumber(d.videoViews75) : dash}</TD>
                       <TD right>{loading ? sk() : d.videoViews100 > 0 ? formatNumber(d.videoViews100) : dash}</TD>
                       {/* Completion rate */}
@@ -615,13 +551,6 @@ export default function KendskabskampagnenPage() {
                         {loading ? sk() : isTv2
                           ? <ManualCell value={tv2Data.cpm} onSave={v => saveTv2Field('cpm', v)} display={formatCurrency} />
                           : formatCurrency(d.cpm)}
-                      </TD>
-                      {/* CTR */}
-                      <TD right>
-                        {loading ? sk() : isTv2 ? dash : (() => {
-                          const imp = k.platform === 'google' ? d.coviewedImpressions : d.impressions
-                          return imp > 0 && d.linkClicks > 0 ? formatPercent(d.linkClicks / imp) : dash
-                        })()}
                       </TD>
                     </tr>
                   )
@@ -639,7 +568,6 @@ export default function KendskabskampagnenPage() {
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totals.videoViews100 > 0 ? formatNumber(totals.videoViews100) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-12" /> : totals.videoViews100 > 0 ? formatPercent(totals.completionRate) : dash}</TD>
                   <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : formatCurrency(totals.cpm)}</TD>
-                  <TD right bold>{isLoading ? <Skeleton className="ml-auto h-4 w-16" /> : totalImpressionsDisplay > 0 && totals.linkClicks > 0 ? formatPercent(totals.linkClicks / totalImpressionsDisplay) : dash}</TD>
                 </tr>
               </tbody>
             </table>
@@ -648,7 +576,64 @@ export default function KendskabskampagnenPage() {
           <p className="mt-2 text-xs text-muted-foreground">
             * TV2 Play og YouTube reach opdateres manuelt — klik på et tal for at redigere det · Google Ads reach er ikke tilgængeligt via standard API
           </p>
+
+          {/* ── Videovisninger ─────────────────────────────────────────────── */}
+          <div className="mt-8">
+            <SectionHeader title="Videovisninger" description="Samlet på tværs af alle kanaler" />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+              <div className="lg:col-span-2">
+                <VideoFunnel
+                  data={{
+                    impressions:    totalImpressionsDisplay,
+                    videoViews25:   totals.videoViews25,
+                    videoViews50:   totals.videoViews50,
+                    videoViews75:   totals.videoViews75,
+                    videoViews100:  totals.videoViews100,
+                    completionRate: totals.completionRate,
+                  }}
+                  loading={isLoading}
+                  color="#D80070"
+                />
+              </div>
+              <DevicePieChart
+                stats={mergedDeviceStats}
+                loading={metaDevice.isLoading || googleDevice.isLoading}
+                title="Eksponeringer pr. enhed"
+                metric="impressions"
+              />
+              <DevicePieChart
+                stats={mergedDeviceStats}
+                loading={metaDevice.isLoading || googleDevice.isLoading}
+                title="Thruplays pr. enhed"
+                metric="completions"
+              />
+            </div>
           </div>
+
+          {/* ── Køn og alder ───────────────────────────────────────────────── */}
+          <div className="mt-8">
+            <SectionHeader
+              title="Køn og alder"
+              description="Meta + YouTube · TV2 Play har ikke demografidata"
+            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <DemographicHeatmap
+                cells={mergedDemoData}
+                loading={metaDemo.isLoading || googleDemo.isLoading}
+                color="#D80070"
+                metric="impressions"
+                title="Eksponeringer"
+              />
+              <DemographicHeatmap
+                cells={mergedDemoData}
+                loading={metaDemo.isLoading || googleDemo.isLoading}
+                color="#8B0040"
+                metric="completions"
+                title="Videogennemførelse"
+              />
+            </div>
+          </div>
+          </Revealable>
         </section>
 
       </main>

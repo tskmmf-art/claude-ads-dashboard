@@ -25,11 +25,17 @@ export const KANALER: KanalConfig[] = [
   { id: 'tv2play', name: 'TV2 Play Ads', budget: 60_000, platform: null     },
 ]
 
+/**
+ * TV2 Play enhedsfordeling — manuelt indtastet fra TV2 Connect.
+ * TV2 leverer ingen API, så tallene vedligeholdes her.
+ * completions = eksponeringer × fuldførelsesrate (97,63 %), som er ens på tværs
+ * af enheder fordi pre-roll ikke kan skippes.
+ */
 export const TV2_DEVICE_STATS = [
-  { device: 'TV',      impressions: 145_418 },
-  { device: 'Desktop', impressions:   6_369 },
-  { device: 'Tablet',  impressions:   7_117 },
-  { device: 'Mobile',  impressions:   3_625 },
+  { device: 'Connected TV', impressions: 126_654, completions: 123_653 },
+  { device: 'Desktop',      impressions:   5_635, completions:   5_501 },
+  { device: 'Tablet',       impressions:   5_635, completions:   5_501 },
+  { device: 'Smartphone',   impressions:   2_818, completions:   2_751 },
 ]
 
 // Hjælpefunktioner ─────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchMetaDeviceStats, fetchGoogleDeviceStats } from '@/lib/api/awareness'
+import { fetchMetaDeviceStats, fetchMetaPlatformStats, fetchGoogleDeviceStats } from '@/lib/api/awareness'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -7,13 +7,16 @@ export async function GET(req: NextRequest) {
   const accountId = searchParams.get('accountId')
   const since     = searchParams.get('since')
   const until     = searchParams.get('until')
+  const breakdown = searchParams.get('breakdown')   // 'device' (default) | 'platform'
 
   if (!accountId || !since || !until)
     return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
 
   try {
     if (platform === 'meta') {
-      const data = await fetchMetaDeviceStats(accountId, since, until)
+      const data = breakdown === 'platform'
+        ? await fetchMetaPlatformStats(accountId, since, until)
+        : await fetchMetaDeviceStats(accountId, since, until)
       return NextResponse.json({ data })
     }
     if (platform === 'google') {
